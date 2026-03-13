@@ -6,14 +6,65 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4BDDA0FA2F62A8BE002507C0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4BDDA0F92F62A8BE002507C0 /* WidgetKit.framework */; };
+		4BDDA0FC2F62A8BE002507C0 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4BDDA0FB2F62A8BE002507C0 /* SwiftUI.framework */; };
+		4BDDA1092F62A8C0002507C0 /* VoitodoWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4BDDA0F72F62A8BE002507C0 /* VoitodoWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		4BDDA1072F62A8C0002507C0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4BDDA0CF2F629946002507C0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4BDDA0F62F62A8BE002507C0;
+			remoteInfo = VoitodoWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		4BDDA10E2F62A8C0002507C0 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				4BDDA1092F62A8C0002507C0 /* VoitodoWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		4BDDA0D72F629946002507C0 /* voitodo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = voitodo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4BDDA0F72F62A8BE002507C0 /* VoitodoWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VoitodoWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4BDDA0F92F62A8BE002507C0 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		4BDDA0FB2F62A8BE002507C0 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4BDDA10A2F62A8C0002507C0 /* Exceptions for "VoitodoWidget" folder in "VoitodoWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4BDDA0F62F62A8BE002507C0 /* VoitodoWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4BDDA0D92F629946002507C0 /* voitodo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = voitodo;
+			sourceTree = "<group>";
+		};
+		4BDDA0FD2F62A8BE002507C0 /* VoitodoWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4BDDA10A2F62A8C0002507C0 /* Exceptions for "VoitodoWidget" folder in "VoitodoWidgetExtension" target */,
+			);
+			path = VoitodoWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -26,6 +77,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4BDDA0F42F62A8BE002507C0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4BDDA0FC2F62A8BE002507C0 /* SwiftUI.framework in Frameworks */,
+				4BDDA0FA2F62A8BE002507C0 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -33,6 +93,8 @@
 			isa = PBXGroup;
 			children = (
 				4BDDA0D92F629946002507C0 /* voitodo */,
+				4BDDA0FD2F62A8BE002507C0 /* VoitodoWidget */,
+				4BDDA0F82F62A8BE002507C0 /* Frameworks */,
 				4BDDA0D82F629946002507C0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +103,18 @@
 			isa = PBXGroup;
 			children = (
 				4BDDA0D72F629946002507C0 /* voitodo.app */,
+				4BDDA0F72F62A8BE002507C0 /* VoitodoWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		4BDDA0F82F62A8BE002507C0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				4BDDA0F92F62A8BE002507C0 /* WidgetKit.framework */,
+				4BDDA0FB2F62A8BE002507C0 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,10 +127,12 @@
 				4BDDA0D32F629946002507C0 /* Sources */,
 				4BDDA0D42F629946002507C0 /* Frameworks */,
 				4BDDA0D52F629946002507C0 /* Resources */,
+				4BDDA10E2F62A8C0002507C0 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				4BDDA1082F62A8C0002507C0 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				4BDDA0D92F629946002507C0 /* voitodo */,
@@ -69,6 +143,28 @@
 			productName = voitodo;
 			productReference = 4BDDA0D72F629946002507C0 /* voitodo.app */;
 			productType = "com.apple.product-type.application";
+		};
+		4BDDA0F62F62A8BE002507C0 /* VoitodoWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4BDDA10B2F62A8C0002507C0 /* Build configuration list for PBXNativeTarget "VoitodoWidgetExtension" */;
+			buildPhases = (
+				4BDDA0F32F62A8BE002507C0 /* Sources */,
+				4BDDA0F42F62A8BE002507C0 /* Frameworks */,
+				4BDDA0F52F62A8BE002507C0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4BDDA0FD2F62A8BE002507C0 /* VoitodoWidget */,
+			);
+			name = VoitodoWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = VoitodoWidgetExtension;
+			productReference = 4BDDA0F72F62A8BE002507C0 /* VoitodoWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -81,6 +177,9 @@
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					4BDDA0D62F629946002507C0 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					4BDDA0F62F62A8BE002507C0 = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
@@ -100,12 +199,20 @@
 			projectRoot = "";
 			targets = (
 				4BDDA0D62F629946002507C0 /* voitodo */,
+				4BDDA0F62F62A8BE002507C0 /* VoitodoWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		4BDDA0D52F629946002507C0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4BDDA0F52F62A8BE002507C0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +229,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4BDDA0F32F62A8BE002507C0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4BDDA1082F62A8C0002507C0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4BDDA0F62F62A8BE002507C0 /* VoitodoWidgetExtension */;
+			targetProxy = 4BDDA1072F62A8C0002507C0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		4BDDA0E02F629947002507C0 /* Debug */ = {
@@ -251,8 +373,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A364WZ58U4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need your microphone to capture your thoughts.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We need speech recognition to turn your voice notes into text.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -282,8 +407,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A364WZ58U4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need your microphone to capture your thoughts.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We need speech recognition to turn your voice notes into text.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -299,6 +427,66 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		4BDDA10C2F62A8C0002507C0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A364WZ58U4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VoitodoWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = VoitodoWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = pakrishn.voitodo.VoitodoWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4BDDA10D2F62A8C0002507C0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = A364WZ58U4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VoitodoWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = VoitodoWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = pakrishn.voitodo.VoitodoWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -323,6 +511,15 @@
 			buildConfigurations = (
 				4BDDA0E32F629947002507C0 /* Debug */,
 				4BDDA0E42F629947002507C0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4BDDA10B2F62A8C0002507C0 /* Build configuration list for PBXNativeTarget "VoitodoWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4BDDA10C2F62A8C0002507C0 /* Debug */,
+				4BDDA10D2F62A8C0002507C0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
