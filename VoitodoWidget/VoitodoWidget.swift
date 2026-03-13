@@ -31,19 +31,17 @@ struct VoitodoWidgetEntryView : View {
     var body: some View {
         ZStack {
             if family == .accessoryCircular {
-                // Lock screen circular widget
-                Image("WidgetIcon")
+                // Lock screen circular widget — use SF Symbol for reliable rendering
+                Image(systemName: "waveform.badge.checkmark")
                     .resizable()
                     .scaledToFit()
-                    .padding(8)
+                    .padding(6)
                     .widgetAccentable()
             } else {
-                // Home screen widget (if they add it there)
+                // Home screen widget
                 VStack {
-                    Image("WidgetIcon")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 40, height: 40)
+                    Image(systemName: "waveform.badge.checkmark")
+                        .font(.largeTitle)
                     Text("Capture Thought")
                         .font(.caption)
                 }

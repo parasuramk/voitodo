@@ -110,7 +110,7 @@ struct ContentView: View {
                     }
                 }
             }
-            .navigationTitle("voitodo")
+            .navigationTitle("Whatodo")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 requestPermissions()
@@ -171,9 +171,15 @@ struct ContentView: View {
                     audioFileURL: audioRecorder.audioFileURL
                 )
                 
-                // Schedule default reminder for next day at 9 AM and get the date
-                if let scheduledDate = ReminderService.shared.scheduleTomorrowReminder(for: newItem) {
+                // Get the reminder date and schedule the hybrid notification
+                if let scheduledDate = ReminderService.shared.getTomorrow9AM() {
                     newItem.reminderDate = scheduledDate
+                    
+                    let capturedText = newItem.text
+                    let capturedID = newItem.id
+                    Task {
+                        await ReminderService.shared.scheduleHybridReminder(text: capturedText, id: capturedID, triggerDate: scheduledDate)
+                    }
                 }
                 
                 modelContext.insert(newItem)

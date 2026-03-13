@@ -5,7 +5,7 @@ import SwiftData
 struct voitodoApp: App {
     
     // Create the SwiftData container for the VoitodoItem model
-    var sharedModelContainer: ModelContainer = {
+    static var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             VoitodoItem.self,
         ])
@@ -22,6 +22,6 @@ struct voitodoApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(voitodoApp.sharedModelContainer)
     }
 }
