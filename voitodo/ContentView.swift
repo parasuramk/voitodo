@@ -263,12 +263,12 @@ struct ContentView: View {
             // Phase 2: smooth spring move to bottom
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                    pendingCompleted.remove(itemID)
+                    _ = pendingCompleted.remove(itemID)
                 }
             }
         } else {
             withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                pendingCompleted.remove(itemID)
+                _ = pendingCompleted.remove(itemID)
                 item.isCompleted = false
             }
         }
