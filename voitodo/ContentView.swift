@@ -145,31 +145,11 @@ struct ContentView: View {
                                 }
                             }
                             .swipeActions(edge: .leading) {
-                            Button(action: {
-                                let itemID = item.id
-                                if !item.isCompleted {
-                                    // Phase 1: mark complete + show strikethrough, but keep row in place
-                                    item.isCompleted = true
-                                    pendingCompleted.insert(itemID)
-                                    Task { await ReminderService.shared.cancelHybridReminder(for: itemID) }
-                                    // Phase 2: after a pause, animate the row gliding to the bottom
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-                                        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                                            pendingCompleted.remove(itemID)
-                                        }
-                                    }
-                                } else {
-                                    // Undo: immediately move back to active section
-                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                                        pendingCompleted.remove(itemID)
-                                        item.isCompleted = false
-                                    }
+                                Button(action: { toggleComplete(item) }) {
+                                    Label(item.isCompleted ? "Undo" : "Complete", systemImage: item.isCompleted ? "arrow.uturn.backward" : "checkmark")
                                 }
-                            }) {
-                                Label(item.isCompleted ? "Undo" : "Complete", systemImage: item.isCompleted ? "arrow.uturn.backward" : "checkmark")
+                                .tint(.green)
                             }
-                            .tint(.green)
-                        }
                         }
                         .onDelete(perform: deleteItems)
                 }
@@ -269,6 +249,27 @@ struct ContentView: View {
                 isRecording = true
             } catch {
                 print("Failed to start recording/transcribing: \(error)")
+            }
+        }
+    }
+    
+    private func toggleComplete(_ item: VoitodoItem) {
+        let itemID = item.id
+        if !item.isCompleted {
+            // Phase 1: visual strikethrough, row stays in place
+            item.isCompleted = true
+            pendingCompleted.insert(itemID)
+            Task { await ReminderService.shared.cancelHybridReminder(for: itemID) }
+            // Phase 2: smooth spring move to bottom
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                    pendingCompleted.remove(itemID)
+                }
+            }
+        } else {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                pendingCompleted.remove(itemID)
+                item.isCompleted = false
             }
         }
     }
