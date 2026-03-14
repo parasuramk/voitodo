@@ -4,18 +4,24 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \VoitodoItem.timestamp, order: .reverse) private var items: [VoitodoItem]
-    
-    // Sort pending items first (incomplete before complete), then by timestamp descending
+
+    // Tracks items visually marked complete but not yet moved in the list.
+    // Two-phase: strikethrough appears instantly; the row moves to bottom after a delay.
+    @State private var pendingCompleted: Set<UUID> = []
+
+    // Items in pendingCompleted are still treated as "active" for sort purposes.
     private var sortedItems: [VoitodoItem] {
         items.sorted { lhs, rhs in
-            if lhs.isCompleted != rhs.isCompleted { return !lhs.isCompleted }
+            let lhsSettled = lhs.isCompleted && !pendingCompleted.contains(lhs.id)
+            let rhsSettled = rhs.isCompleted && !pendingCompleted.contains(rhs.id)
+            if lhsSettled != rhsSettled { return !lhsSettled }
             return lhs.timestamp > rhs.timestamp
         }
     }
-    
+
     @StateObject private var audioRecorder = AudioRecorder()
     @StateObject private var speechRecognizer = SpeechRecognizer()
-    
+
     @State private var isRecording = false
     @State private var hasPermissions = false
     
@@ -140,13 +146,24 @@ struct ContentView: View {
                             }
                             .swipeActions(edge: .leading) {
                             Button(action: {
-                                withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
-                                    item.isCompleted.toggle()
-                                }
-                                // Cancel (or reinstate) notification based on new state
                                 let itemID = item.id
-                                if item.isCompleted {
+                                if !item.isCompleted {
+                                    // Phase 1: mark complete + show strikethrough, but keep row in place
+                                    item.isCompleted = true
+                                    pendingCompleted.insert(itemID)
                                     Task { await ReminderService.shared.cancelHybridReminder(for: itemID) }
+                                    // Phase 2: after a pause, animate the row gliding to the bottom
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                                        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                                            pendingCompleted.remove(itemID)
+                                        }
+                                    }
+                                } else {
+                                    // Undo: immediately move back to active section
+                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                                        pendingCompleted.remove(itemID)
+                                        item.isCompleted = false
+                                    }
                                 }
                             }) {
                                 Label(item.isCompleted ? "Undo" : "Complete", systemImage: item.isCompleted ? "arrow.uturn.backward" : "checkmark")
