@@ -3,7 +3,15 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: [SortDescriptor(\VoitodoItem.isCompleted), SortDescriptor(\VoitodoItem.timestamp, order: .reverse)]) private var items: [VoitodoItem]
+    @Query(sort: \VoitodoItem.timestamp, order: .reverse) private var items: [VoitodoItem]
+    
+    // Sort pending items first (incomplete before complete), then by timestamp descending
+    private var sortedItems: [VoitodoItem] {
+        items.sorted { lhs, rhs in
+            if lhs.isCompleted != rhs.isCompleted { return !lhs.isCompleted }
+            return lhs.timestamp > rhs.timestamp
+        }
+    }
     
     @StateObject private var audioRecorder = AudioRecorder()
     @StateObject private var speechRecognizer = SpeechRecognizer()
@@ -86,7 +94,7 @@ struct ContentView: View {
                 
                 // The Inbox List
                 List {
-                    ForEach(items) { item in
+                    ForEach(sortedItems) { item in
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(item.text)
                                     .font(.body)
@@ -248,10 +256,10 @@ struct ContentView: View {
     private func deleteItems(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                let item = items[index]
+                let item = sortedItems[index]
                 let itemID = item.id
                 
-                // Call cancel reminder
+                // Cancel pending notification
                 Task {
                     await ReminderService.shared.cancelHybridReminder(for: itemID)
                 }
@@ -264,4 +272,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .modelContainer(for: VoitodoItem.self, inMemory: true)
 }
