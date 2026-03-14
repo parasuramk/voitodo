@@ -121,4 +121,27 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
         let request = UNNotificationRequest(identifier: "summary", content: content, trigger: trigger)
         try? await UNUserNotificationCenter.current().add(request)
     }
+    
+    func cancelHybridReminder(for id: UUID) async {
+        let center = UNUserNotificationCenter.current()
+        
+        // Remove individual notification if it exists for this item
+        center.removePendingNotificationRequests(withIdentifiers: ["item-\(id.uuidString)"])
+        
+        // If there's a summary instead, decrement its count
+        let requests = await center.pendingNotificationRequests()
+        if let summary = requests.first(where: { $0.identifier == "summary" }),
+           let currentCount = summary.content.userInfo["count"] as? Int {
+            if currentCount > 1 {
+                // Decrement and update the summary
+                let dateTrigger = summary.trigger as? UNCalendarNotificationTrigger
+                if let dateComponents = dateTrigger?.dateComponents {
+                    await updateSummaryNotification(count: currentCount - 1, dateComponents: dateComponents)
+                }
+            } else {
+                // Count dropped to 0, remove the summary entirely
+                center.removePendingNotificationRequests(withIdentifiers: ["summary"])
+            }
+        }
+    }
 }

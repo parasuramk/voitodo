@@ -3,7 +3,7 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \VoitodoItem.timestamp, order: .reverse) private var items: [VoitodoItem]
+    @Query(sort: [SortDescriptor(\VoitodoItem.isCompleted), SortDescriptor(\VoitodoItem.timestamp, order: .reverse)]) private var items: [VoitodoItem]
     
     @StateObject private var audioRecorder = AudioRecorder()
     @StateObject private var speechRecognizer = SpeechRecognizer()
@@ -45,15 +45,48 @@ struct ContentView: View {
                         // Pulse animation when recording
                         .scaleEffect(isRecording ? 1.1 : 1.0)
                         .animation(isRecording ? Animation.easeInOut(duration: 1).repeatForever(autoreverses: true) : .default, value: isRecording)
+                        
+                        // Cancel button
+                        if isRecording {
+                            Button(action: {
+                                cancelRecording()
+                            }) {
+                                Text("Cancel")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color.red.opacity(0.1))
+                                    .cornerRadius(20)
+                            }
+                            .transition(.opacity)
+                        } else {
+                            // Invisible placeholder to keep layout from jumping
+                            Text("Cancel")
+                                .font(.subheadline)
+                                .padding(.vertical, 8)
+                                .opacity(0)
+                        }
                     }
                     .padding(.vertical, 40)
                 }
-                .frame(maxHeight: 300)
+                .frame(maxHeight: 330)
+                
+                // Fixed Header
+                HStack {
+                    Text("Captured Thoughts")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.top, 16)
+                .padding(.bottom, 4)
                 
                 // The Inbox List
                 List {
-                    Section(header: Text("Captured Thoughts")) {
-                        ForEach(items) { item in
+                    ForEach(items) { item in
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(item.text)
                                     .font(.body)
@@ -98,17 +131,23 @@ struct ContentView: View {
                                 }
                             }
                             .swipeActions(edge: .leading) {
-                                Button(action: {
-                                    item.isCompleted.toggle()
-                                }) {
-                                    Label(item.isCompleted ? "Undo" : "Complete", systemImage: item.isCompleted ? "arrow.uturn.backward" : "checkmark")
+                            Button(action: {
+                                item.isCompleted.toggle()
+                                // Cancel (or reinstate) notification based on new state
+                                let itemID = item.id
+                                if item.isCompleted {
+                                    Task { await ReminderService.shared.cancelHybridReminder(for: itemID) }
                                 }
-                                .tint(.green)
+                            }) {
+                                Label(item.isCompleted ? "Undo" : "Complete", systemImage: item.isCompleted ? "arrow.uturn.backward" : "checkmark")
                             }
+                            .tint(.green)
+                        }
                         }
                         .onDelete(perform: deleteItems)
-                    }
                 }
+                // Custom list style to minimize default inset grouped padding at the top
+                .listStyle(.insetGrouped)
             }
             .navigationTitle("Whatodo")
             .navigationBarTitleDisplayMode(.inline)
@@ -146,6 +185,15 @@ struct ContentView: View {
                 }
             }
         }
+    }
+    
+    private func cancelRecording() {
+        isRecording = false
+        audioRecorder.stopRecording()
+        speechRecognizer.stopTranscribing()
+        
+        // Clear text to prevent it from flashing on next open
+        speechRecognizer.transcribedText = ""
     }
     
     private func toggleRecording() {
@@ -200,7 +248,15 @@ struct ContentView: View {
     private func deleteItems(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(items[index])
+                let item = items[index]
+                let itemID = item.id
+                
+                // Call cancel reminder
+                Task {
+                    await ReminderService.shared.cancelHybridReminder(for: itemID)
+                }
+                
+                modelContext.delete(item)
             }
         }
     }
