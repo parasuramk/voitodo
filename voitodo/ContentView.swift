@@ -140,7 +140,9 @@ struct ContentView: View {
                             }
                             .swipeActions(edge: .leading) {
                             Button(action: {
-                                item.isCompleted.toggle()
+                                withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
+                                    item.isCompleted.toggle()
+                                }
                                 // Cancel (or reinstate) notification based on new state
                                 let itemID = item.id
                                 if item.isCompleted {
@@ -156,6 +158,7 @@ struct ContentView: View {
                 }
                 // Custom list style to minimize default inset grouped padding at the top
                 .listStyle(.insetGrouped)
+                .animation(.spring(response: 0.45, dampingFraction: 0.75), value: sortedItems.map(\.id))
             }
             .navigationTitle("Whatodo")
             .navigationBarTitleDisplayMode(.inline)
