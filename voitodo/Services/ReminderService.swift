@@ -50,6 +50,28 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
             if let items = try? context.fetch(descriptor), let item = items.first(where: { $0.id == id }) {
                 item.isCompleted = true
                 try? context.save()
+                updateBadgeCount()
+            }
+        }
+    }
+    
+    // Updates the iOS App Icon Badge to reflect the total number of uncompleted tasks.
+    func updateBadgeCount() {
+        Task { @MainActor in
+            let container = voitodoApp.sharedModelContainer
+            let context = container.mainContext
+            // Note: SwiftData predicate filtering on boolean isn't always stable in early iOS 17. 
+            // Using in-memory filter as a safe fallback for the badge count.
+            let descriptor = FetchDescriptor<VoitodoItem>()
+            if let allItems = try? context.fetch(descriptor) {
+                let uncompletedCount = allItems.filter { !$0.isCompleted }.count
+                if #available(iOS 16.0, *) {
+                    UNUserNotificationCenter.current().setBadgeCount(uncompletedCount)
+                } else {
+                    Task { @MainActor in
+                        // Older method (fallback)
+                    }
+                }
             }
         }
     }

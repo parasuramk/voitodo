@@ -376,6 +376,9 @@
 				DEVELOPMENT_TEAM = A364WZ58U4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "We need access to calendar your thoughts.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "We need full access to remove calendar events when you undo tasks.";
+				INFOPLIST_KEY_CFBundleDisplayName = Whatodo;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need your microphone to capture your thoughts.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We need speech recognition to turn your voice notes into text.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -388,7 +391,6 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				INFOPLIST_KEY_CFBundleDisplayName = Whatodo;
 				PRODUCT_BUNDLE_IDENTIFIER = pakrishn.voitodo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -411,6 +413,9 @@
 				DEVELOPMENT_TEAM = A364WZ58U4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "We need access to calendar your thoughts.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "We need full access to remove calendar events when you undo tasks.";
+				INFOPLIST_KEY_CFBundleDisplayName = Whatodo;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need your microphone to capture your thoughts.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We need speech recognition to turn your voice notes into text.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -423,7 +428,6 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				INFOPLIST_KEY_CFBundleDisplayName = Whatodo;
 				PRODUCT_BUNDLE_IDENTIFIER = pakrishn.voitodo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -445,6 +449,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A364WZ58U4;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "We need access to calendar your thoughts.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "We need full access to remove calendar events when you undo tasks.";
 				INFOPLIST_FILE = VoitodoWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VoitodoWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -475,6 +481,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A364WZ58U4;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "We need access to calendar your thoughts.";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "We need full access to remove calendar events when you undo tasks.";
 				INFOPLIST_FILE = VoitodoWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = VoitodoWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

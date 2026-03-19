@@ -7,6 +7,14 @@ class SpeechRecognizer: ObservableObject {
     @Published var transcribedText: String = ""
     @Published var isTranscribing: Bool = false
     
+    // MARK: - Silence Detection
+    var onSilenceDetected: (() -> Void)?
+    private var silenceTimer: Timer?
+    private var silenceThreshold: TimeInterval {
+        let val = UserDefaults.standard.double(forKey: "silenceThreshold")
+        return val > 0 ? val : 3.0
+    }
+    
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
@@ -43,8 +51,14 @@ class SpeechRecognizer: ObservableObject {
             recognitionRequest.requiresOnDeviceRecognition = false
         }
         
+        if #available(iOS 16, *) {
+            recognitionRequest.addsPunctuation = true
+        }
+        
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
             var isFinal = false
+            
+            self.resetSilenceTimer()
             
             if let result = result {
                 DispatchQueue.main.async {
@@ -54,6 +68,7 @@ class SpeechRecognizer: ObservableObject {
             }
             
             if error != nil || isFinal {
+                self.silenceTimer?.invalidate()
                 self.audioEngine.stop()
                 inputNode.removeTap(onBus: 0)
                 self.recognitionRequest = nil
@@ -76,11 +91,24 @@ class SpeechRecognizer: ObservableObject {
             self.isTranscribing = true
             self.transcribedText = "Listening..."
         }
+        
+        resetSilenceTimer()
     }
     
     func stopTranscribing() {
+        silenceTimer?.invalidate()
         audioEngine.stop()
         recognitionRequest?.endAudio()
         self.isTranscribing = false
+    }
+    
+    private func resetSilenceTimer() {
+        silenceTimer?.invalidate()
+        DispatchQueue.main.async {
+            self.silenceTimer = Timer.scheduledTimer(withTimeInterval: self.silenceThreshold, repeats: false) { [weak self] _ in
+                guard let self = self, self.isTranscribing else { return }
+                self.onSilenceDetected?()
+            }
+        }
     }
 }
