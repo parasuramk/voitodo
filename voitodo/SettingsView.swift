@@ -2,8 +2,6 @@ import SwiftUI
 import SwiftData
 
 struct SettingsView: View {
-    @AppStorage("showWritingTools") private var showWritingTools = false
-    
     @AppStorage("iCloudSyncEnabled") private var iCloudSyncEnabled = true
     @AppStorage("silenceThreshold") private var silenceThreshold: Double = 3.0
     @AppStorage("undoDurationMinutes") private var undoDurationMinutes: Double = 60.0
@@ -53,12 +51,6 @@ struct SettingsView: View {
                 }
             }
             
-            if UIDevice.supportsAppleIntelligence {
-                Section(header: Text("Intelligence"), footer: Text("Enable manual Apple Intelligence formatting on raw thoughts via the Writing Tools modal.")) {
-                    Toggle("Apple Intelligence Tools", isOn: $showWritingTools)
-                }
-            }
-            
             Section(header: Text("About")) {
                 HStack {
                     Text("Version")
@@ -71,7 +63,6 @@ struct SettingsView: View {
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
         // Write every setting change back to iCloud KV Store so it survives reinstalls
-        .onChange(of: showWritingTools)    { pushToiCloud("showWritingTools", $0) }
         .onChange(of: iCloudSyncEnabled)   { pushToiCloud("iCloudSyncEnabled", $0) }
         .onChange(of: silenceThreshold)    { pushToiCloud("silenceThreshold", $0) }
         .onChange(of: undoDurationMinutes) { pushToiCloud("undoDurationMinutes", $0) }

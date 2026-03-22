@@ -15,7 +15,6 @@ struct ContentView: View {
     @AppStorage("hideCompleted") private var hideCompleted = false
     @AppStorage("undoDurationMinutes") private var undoDurationMinutes: Double = 60.0
     @AppStorage("autoTriageToCalendar") private var autoTriageToCalendar = false
-    @AppStorage("showWritingTools") private var showWritingTools = false
     
     @State private var intelligenceItem: VoitodoItem? = nil
 
@@ -42,8 +41,7 @@ struct ContentView: View {
         } else if calendar.isDateInYesterday(date) {
             return "Yesterday"
         } else {
-            let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: Date())).day ?? 0
-            return "\(days) day\(days == 1 ? "" : "s") old"
+            return "Older"
         }
     }
 
@@ -129,6 +127,7 @@ struct ContentView: View {
                                         .foregroundColor((item.isCalendared ?? false) ? .orange : .primary)
                                         .opacity(item.isCompleted ? ((item.isCalendared ?? false) ? 1.0 : 0.3) : decayOpacity(for: item.timestamp))
                                         .lineSpacing(2)
+                                        .textSelection(.enabled)
                                     
                                     HStack {
                                         if item.isCalendared ?? false {
@@ -158,17 +157,6 @@ struct ContentView: View {
                                         
                                         Spacer()
                                         
-                                        if UIDevice.supportsAppleIntelligence && showWritingTools {
-                                            Button(action: {
-                                                intelligenceItem = item
-                                            }) {
-                                                Image(systemName: "wand.and.stars")
-                                                    .font(.system(size: 14))
-                                                    .foregroundColor(Color(UIColor.lightGray))
-                                            }
-                                            .buttonStyle(PlainButtonStyle())
-                                        }
-                                        
                                         if let audioURL = item.audioFileURL {
                                             Button(action: {
                                                 let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -192,6 +180,21 @@ struct ContentView: View {
                             .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
+                            .contextMenu {
+                                if UIDevice.supportsAppleIntelligence {
+                                    Button {
+                                        intelligenceItem = item
+                                    } label: {
+                                        Label("Writing Tools", systemImage: "wand.and.stars")
+                                    }
+                                    Divider()
+                                }
+                                Button {
+                                    UIPasteboard.general.string = item.summary ?? item.text
+                                } label: {
+                                    Label("Copy Text", systemImage: "doc.on.doc")
+                                }
+                            }
                             .swipeActions(edge: .leading) {
                                 if item.isCompleted {
                                     if let completedAt = item.completionDate, Date().timeIntervalSince(completedAt) <= (undoDurationMinutes * 60) {
@@ -631,6 +634,8 @@ struct ContentView: View {
     }
 }
 
+// MARK: - Writing Tools Modal
+
 struct IntelligenceTextEditorView: View {
     @Bindable var item: VoitodoItem
     @Environment(\.dismiss) var dismiss
@@ -644,18 +649,12 @@ struct IntelligenceTextEditorView: View {
                 .ignoresSafeArea(.keyboard)
             
             HStack {
-                Button("Cancel") {
-                    dismiss()
-                }
-                .font(.body)
-                .foregroundColor(.red)
-                
+                Button("Cancel") { dismiss() }
+                    .font(.body)
+                    .foregroundColor(.red)
                 Spacer()
-                
                 Button("Done") {
-                    // Force final buffer flush
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                         try? item.modelContext?.save()
                         item.modelContext?.processPendingChanges()
@@ -680,38 +679,28 @@ struct IntelligenceTextView: UIViewRepresentable {
         textView.isEditable = true
         textView.delegate = context.coordinator
         textView.contentInsetAdjustmentBehavior = .never
-
         if #available(iOS 18.0, *) {
             textView.writingToolsBehavior = .complete
             textView.allowsEditingTextAttributes = true
         }
-
         return textView
     }
 
     func updateUIView(_ uiView: UITextView, context: Context) {
-        // Safe "Initial Pull" only. 
         if uiView.text.isEmpty && !item.text.isEmpty {
             uiView.text = item.text
         }
     }
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     class Coordinator: NSObject, UITextViewDelegate {
         var parent: IntelligenceTextView
-
-        init(_ parent: IntelligenceTextView) {
-            self.parent = parent
-        }
-
+        init(_ parent: IntelligenceTextView) { self.parent = parent }
         func textViewDidChange(_ textView: UITextView) {
             parent.item.text = textView.text
-            parent.item.summary = nil // Explicitly clear summary so UI falls back to new text
+            parent.item.summary = nil
         }
-        
         func textViewDidEndEditing(_ textView: UITextView) {
             parent.item.text = textView.text
             parent.item.summary = nil
@@ -721,37 +710,19 @@ struct IntelligenceTextView: UIViewRepresentable {
 
 extension UIDevice {
     static var supportsAppleIntelligence: Bool {
-        if #available(iOS 18.1, *) {
-            var systemInfo = utsname()
-            uname(&systemInfo)
-            let machineMirror = Mirror(reflecting: systemInfo.machine)
-            let identifier = machineMirror.children.reduce("") { identifier, element in
-                guard let value = element.value as? Int8, value != 0 else { return identifier }
-                return identifier + String(UnicodeScalar(UInt8(value)))
-            }
-            
-            // Simulator fallbacks
-            if identifier == "i386" || identifier == "x86_64" || identifier == "arm64" { return true }
-            
-            // iPad M-Class (iPad Pro M1/M2/M4, iPad Air M1/M2)
-            if identifier.hasPrefix("iPad13") || identifier.hasPrefix("iPad14") || identifier.hasPrefix("iPad15") || identifier.hasPrefix("iPad16") { return true }
-            
-            // Dynamic iPhone Version Check (Anything A17 Pro or newer)
-            // iPhone 15 Pro = iPhone16,1
-            // iPhone 16 = iPhone17,x
-            // iPhone 17 = iPhone18,x
-            if identifier.hasPrefix("iPhone") {
-                let modelNumbers = identifier.replacingOccurrences(of: "iPhone", with: "").components(separatedBy: ",")
-                if let majorVersion = Int(modelNumbers[0]), majorVersion >= 16 {
-                    return true
-                }
-            }
-            
-            // iPad M-Class (iPad Pro M1/M2/M4, iPad Air M1/M2)
-            if identifier.hasPrefix("iPad13") || identifier.hasPrefix("iPad14") || identifier.hasPrefix("iPad15") || identifier.hasPrefix("iPad16") { return true }
-            
-            return false
+        guard #available(iOS 18.1, *) else { return false }
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let machineMirror = Mirror(reflecting: systemInfo.machine)
+        let identifier = machineMirror.children.reduce("") { id, element in
+            guard let value = element.value as? Int8, value != 0 else { return id }
+            return id + String(UnicodeScalar(UInt8(value)))
         }
+        if ["i386", "x86_64", "arm64"].contains(identifier) { return true }
+        if ["iPad13", "iPad14", "iPad15", "iPad16"].contains(where: { identifier.hasPrefix($0) }) { return true }
+        if identifier.hasPrefix("iPhone"),
+           let major = Int(identifier.replacingOccurrences(of: "iPhone", with: "").components(separatedBy: ",")[0]),
+           major >= 16 { return true }
         return false
     }
 }

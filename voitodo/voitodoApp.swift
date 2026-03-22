@@ -20,7 +20,6 @@ enum Theme: String, CaseIterable, Identifiable {
 
 /// All UserDefaults keys that should be mirrored to iCloud KV Store.
 private let iCloudSyncedKeys = [
-    "showWritingTools",
     "iCloudSyncEnabled",
     "silenceThreshold",
     "undoDurationMinutes",
