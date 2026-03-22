@@ -1,9 +1,11 @@
 import SwiftUI
 import SwiftData
 import EventKit
+import AudioToolbox
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \VoitodoItem.timestamp, order: .reverse) private var items: [VoitodoItem]
 
     // Tracks items visually marked complete but not yet moved in the list.
@@ -13,6 +15,9 @@ struct ContentView: View {
     @AppStorage("hideCompleted") private var hideCompleted = false
     @AppStorage("undoDurationMinutes") private var undoDurationMinutes: Double = 60.0
     @AppStorage("autoTriageToCalendar") private var autoTriageToCalendar = false
+    @AppStorage("showWritingTools") private var showWritingTools = false
+    
+    @State private var intelligenceItem: VoitodoItem? = nil
 
     // Calculates opacity based on how old the thought is (Visual Decay)
     private func decayOpacity(for timestamp: Date) -> Double {
@@ -29,6 +34,19 @@ struct ContentView: View {
         }
     }
 
+    // Returns a human-friendly relative day label for a timestamp
+    private func relativeDayLabel(for date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Today"
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday"
+        } else {
+            let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: Date())).day ?? 0
+            return "\(days) day\(days == 1 ? "" : "s") old"
+        }
+    }
+
     // Items in pendingCompleted are still treated as "active" for sort purposes.
     private var sortedItems: [VoitodoItem] {
         let filteredItems = hideCompleted ? items.filter { !$0.isCompleted || pendingCompleted.contains($0.id) } : items
@@ -40,151 +58,140 @@ struct ContentView: View {
             return lhs.timestamp > rhs.timestamp
         }
     }
+    
+    // Helper to extract 10 AM tomorrow for specific calendar blocking
+    private func getTomorrow10AM() -> Date {
+        let calendar = Calendar.current
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+        return calendar.date(bySettingHour: 10, minute: 0, second: 0, of: tomorrow) ?? Date()
+    }
 
     @StateObject private var audioRecorder = AudioRecorder()
     @StateObject private var speechRecognizer = SpeechRecognizer()
 
     @State private var isRecording = false
     @State private var hasPermissions = false
+    @State private var isBreathing = false
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // The Big Record Area
-                ZStack {
-                    Color(UIColor.systemGroupedBackground)
-                        .ignoresSafeArea()
-                    
-                    VStack(spacing: 20) {
-                        Text(speechRecognizer.isTranscribing ? speechRecognizer.transcribedText : "Tap to Capture Thought")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                            .frame(height: 60)
+            ZStack {
+                VStack(spacing: 0) {
+                    // The Big Record Area permanently rendered
+                    ZStack {
+                        LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.08), Color(UIColor.systemGroupedBackground)]), startPoint: .top, endPoint: .bottom)
+                            .ignoresSafeArea()
                         
-                        Button(action: {
-                            toggleRecording()
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(isRecording ? Color.red : Color.blue)
-                                    .frame(width: 150, height: 150)
-                                    .shadow(color: (isRecording ? Color.red : Color.blue).opacity(0.4), radius: 20, x: 0, y: 10)
-                                
-                                Image(systemName: isRecording ? "stop.fill" : "mic.fill")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(.white)
-                                    .contentTransition(.symbolEffect(.replace))
-                            }
-                        }
-                        // Pulse animation when recording
-                        .scaleEffect(isRecording ? 1.1 : 1.0)
-                        .animation(isRecording ? Animation.easeInOut(duration: 1).repeatForever(autoreverses: true) : .default, value: isRecording)
-                        
-                        // Cancel button
-                        if isRecording {
+                        VStack(spacing: 12) {
                             Button(action: {
-                                cancelRecording()
+                                toggleRecording()
                             }) {
-                                Text("Cancel")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.red)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(Color.red.opacity(0.1))
-                                    .cornerRadius(20)
+                                ZStack {
+                                    Circle()
+                                        .fill(colorScheme == .dark ? Color(red: 192/255.0, green: 132/255.0, blue: 252/255.0) : Color.blue)
+                                        .frame(width: 220, height: 220)
+                                        .shadow(
+                                            color: colorScheme == .dark ? Color(red: 192/255.0, green: 132/255.0, blue: 252/255.0).opacity(0.7) : Color.blue.opacity(0.4),
+                                            radius: colorScheme == .dark ? 35 : 20,
+                                            x: 0,
+                                            y: colorScheme == .dark ? 0 : 10
+                                        )
+                                    
+                                    Image(systemName: "mic.fill")
+                                        .font(.system(size: 80))
+                                        .foregroundColor(colorScheme == .dark ? Color.white.opacity(0.9) : .white)
+                                }
                             }
-                            .transition(.opacity)
-                        } else {
-                            // Invisible placeholder to keep layout from jumping
-                            Text("Cancel")
-                                .font(.subheadline)
-                                .padding(.vertical, 8)
-                                .opacity(0)
+                            .scaleEffect(!isRecording && isBreathing ? 1.09 : 1.0)
+                            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isBreathing)
                         }
+                        .padding(.top, 5)
+                        .padding(.bottom, 10)
                     }
-                    .padding(.vertical, 40)
-                }
-                .frame(maxHeight: 330)
+                    .zIndex(1)
                 
-                // Fixed Header
-                HStack {
-                    Text("Captured Thoughts")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    Spacer()
-                    
-                    Button(action: {
-                        withAnimation {
-                            hideCompleted.toggle()
-                        }
-                    }) {
-                        Image(systemName: hideCompleted ? "eye.slash" : "eye")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(hideCompleted ? .blue : .secondary)
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top, 16)
-                .padding(.bottom, 4)
+                // Fixed Header removed dynamically to rely cleanly on Toolbar navigation
                 
                 // The Inbox List
                 List {
                     ForEach(sortedItems) { item in
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(item.summary ?? item.text)
-                                    .font(.body)
-                                    .strikethrough(item.isCompleted)
-                                    .foregroundColor((item.isCalendared ?? false) ? .red : .primary)
-                                    .opacity(item.isCompleted ? ((item.isCalendared ?? false) ? 1.0 : 0.3) : decayOpacity(for: item.timestamp))
+                            HStack(alignment: .top, spacing: 12) {
+                                // Subtle Left Vertical Bar
+                                RoundedRectangle(cornerRadius: 1)
+                                    .fill((item.isCalendared ?? false) ? Color.orange : Color.gray.opacity(0.4))
+                                    .frame(width: 3)
+                                    .padding(.vertical, 2)
                                 
-                                HStack {
-                                    Text("\(item.timestamp.formatted(date: .abbreviated, time: .shortened))")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(item.summary ?? item.text)
+                                        .font(.system(size: 17, weight: .medium, design: .default))
+                                        .strikethrough(item.isCompleted)
+                                        .foregroundColor((item.isCalendared ?? false) ? .orange : .primary)
+                                        .opacity(item.isCompleted ? ((item.isCalendared ?? false) ? 1.0 : 0.3) : decayOpacity(for: item.timestamp))
+                                        .lineSpacing(2)
+                                    
+                                    HStack {
+                                        if item.isCalendared ?? false {
+                                            Image(systemName: "calendar")
+                                                .font(.system(size: 11))
+                                                .foregroundColor(.orange)
+                                        }
                                         
-                                    if item.isCalendared ?? false {
-                                        Image(systemName: "calendar")
-                                            .font(.caption)
-                                            .foregroundColor(.red)
-                                            .padding(.leading, 4)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    if let reminderDate = item.reminderDate, !item.isCompleted {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "bell.fill")
-                                                .font(.caption2)
-                                                .foregroundColor(.orange)
-                                            Text(reminderDate, style: .time)
-                                                .font(.caption)
-                                                .foregroundColor(.orange)
+                                        Text(relativeDayLabel(for: item.timestamp))
+                                            .font(.system(size: 13, weight: .regular, design: .default))
+                                            .foregroundColor(Color(UIColor.lightGray))
+                                        
+                                        if let reminderDate = item.reminderDate, !item.isCompleted, reminderDate > Date() {
+                                            Text("•")
+                                                .font(.system(size: 13))
+                                                .foregroundColor(Color(UIColor.lightGray))
+                                                
+                                            HStack(spacing: 4) {
+                                                Image(systemName: "bell.fill")
+                                                    .font(.system(size: 11))
+                                                    .foregroundColor(Color(UIColor.lightGray))
+                                                Text(reminderDate, style: .time)
+                                                    .font(.system(size: 13))
+                                                    .foregroundColor(Color(UIColor.lightGray))
+                                            }
                                         }
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Color.orange.opacity(0.15))
-                                        .cornerRadius(4)
-                                    }
-                                    
-                                    if let audioURL = item.audioFileURL {
-                                        Button(action: {
-                                            // The iOS Simulator changes the app's UUID Sandbox path on every build.
-                                            // We must dynamically reconstruct the file URL using the saved filename.
-                                            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                                            let currentURL = documentsPath.appendingPathComponent(audioURL.lastPathComponent)
-                                            AudioPlayer.shared.play(url: currentURL)
-                                        }) {
-                                            Image(systemName: "play.circle.fill")
-                                                .foregroundColor(.blue)
-                                                .font(.title3)
+                                        
+                                        Spacer()
+                                        
+                                        if UIDevice.supportsAppleIntelligence && showWritingTools {
+                                            Button(action: {
+                                                intelligenceItem = item
+                                            }) {
+                                                Image(systemName: "wand.and.stars")
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(Color(UIColor.lightGray))
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
                                         }
-                                        .buttonStyle(PlainButtonStyle())
+                                        
+                                        if let audioURL = item.audioFileURL {
+                                            Button(action: {
+                                                let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                                                let currentURL = documentsPath.appendingPathComponent(audioURL.lastPathComponent)
+                                                AudioPlayer.shared.play(url: currentURL)
+                                            }) {
+                                                Image(systemName: "waveform")
+                                                    .font(.system(size: 14))
+                                                    .foregroundColor(Color(UIColor.lightGray))
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
                                     }
                                 }
                             }
+                            .padding(.vertical, 10)
+                            .padding(.horizontal, 16)
+                            .background(Color(UIColor.secondarySystemGroupedBackground))
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.35 : 0.06), radius: 1, x: 0, y: 1)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
                             .swipeActions(edge: .leading) {
                                 if item.isCompleted {
                                     if let completedAt = item.completionDate, Date().timeIntervalSince(completedAt) <= (undoDurationMinutes * 60) {
@@ -223,21 +230,104 @@ struct ContentView: View {
                         }
                         // Removed standard .onDelete to prevent default delete swipes on protected items.
                 }
-                // Custom list style to minimize default inset grouped padding at the top
-                .listStyle(.insetGrouped)
+                // Custom list style to precisely close vertical gaps
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .animation(.spring(response: 0.45, dampingFraction: 0.75), value: sortedItems.map(\.id))
+                } // End of underlying VStack layout
+                
+                // Dark Active Recording Overlay
+                if isRecording {
+                    ZStack {
+                        Color.black.ignoresSafeArea()
+                        
+                        VStack {
+                            Spacer()
+                            
+                            ScrollView {
+                                VStack(alignment: .center) {
+                                    Spacer(minLength: 40)
+                                    Text(speechRecognizer.isTranscribing ? speechRecognizer.transcribedText : "Listening...")
+                                        .font(.system(size: 26, weight: .medium, design: .default))
+                                        .foregroundColor(.white)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 30)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .bottom)
+                            }
+                            .frame(height: 150)
+                            .defaultScrollAnchor(.bottom)
+                            
+                            Spacer().frame(height: 40)
+                            
+                            // Huge Centered Red Stop Button
+                            Button(action: {
+                                toggleRecording()
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .stroke(Color.red.opacity(0.5), lineWidth: 4)
+                                        .frame(width: 180, height: 180)
+                                        .scaleEffect(1.15)
+                                        .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isRecording)
+                                    
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 140, height: 140)
+                                        .shadow(color: Color.red.opacity(0.6), radius: 30, x: 0, y: 10)
+                                    
+                                    Image(systemName: "stop.fill")
+                                        .font(.system(size: 50))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            .padding(.bottom, 50)
+                            
+                            // Small Cancel at very bottom
+                            Button(action: {
+                                cancelRecording()
+                            }) {
+                                Text("Cancel")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white.opacity(0.6))
+                            }
+                            .padding(.bottom, 50)
+                        }
+                    }
+                    .transition(.opacity)
+                }
+            } // End of root ZStack
+            .fullScreenCover(item: $intelligenceItem) { item in
+                IntelligenceTextEditorView(item: item)
             }
-            .navigationTitle("Whatodo")
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar(isRecording ? .hidden : .automatic, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: SettingsView()) {
-                        Image(systemName: "gearshape")
-                            .foregroundColor(.primary)
+                    if !isRecording {
+                        HStack(spacing: 16) {
+                            Button(action: {
+                                withAnimation {
+                                    hideCompleted.toggle()
+                                }
+                            }) {
+                                Image(systemName: hideCompleted ? "eye.slash" : "eye")
+                                    .foregroundColor(hideCompleted ? .blue : .primary)
+                            }
+                            
+                            NavigationLink(destination: SettingsView()) {
+                                Image(systemName: "gearshape")
+                                    .foregroundColor(.primary)
+                            }
+                        }
                     }
                 }
             }
             .onAppear {
+                // Delay breathing start so layout settles first, preventing top-left fly-in bug
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    isBreathing = true
+                }
                 requestPermissions()
                 ReminderService.shared.updateBadgeCount()
                 speechRecognizer.onSilenceDetected = {
@@ -305,6 +395,12 @@ struct ContentView: View {
             audioRecorder.stopRecording()
             speechRecognizer.stopTranscribing()
             
+            // Haptic and Audio cue AFTER session ends with a small delay for full volume
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                AudioServicesPlaySystemSound(1114)
+            }
+            
             // Save the result
             if !speechRecognizer.transcribedText.isEmpty && speechRecognizer.transcribedText != "Listening..." {
                 let rawText = speechRecognizer.transcribedText
@@ -337,12 +433,19 @@ struct ContentView: View {
             
         } else {
             // Start
-            do {
-                try speechRecognizer.startTranscribing()
-                audioRecorder.startRecording()
-                isRecording = true
-            } catch {
-                print("Failed to start recording/transcribing: \(error)")
+            // Haptic and Audio cue BEFORE session starts to ensure audibility
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+            AudioServicesPlaySystemSound(1113)
+            
+            // Tiny delay to ensure the chime plays at full volume before the mic ducks it
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                do {
+                    try speechRecognizer.startTranscribing()
+                    audioRecorder.startRecording()
+                    isRecording = true
+                } catch {
+                    print("Failed to start recording/transcribing: \(error)")
+                }
             }
         }
     }
@@ -431,11 +534,15 @@ struct ContentView: View {
                 let event = EKEvent(eventStore: store)
                 event.title = item.summary ?? item.text
                 
-                // Creates an "All Day" event for today as a concrete goal
-                event.startDate = Date()
-                event.endDate = Date()
-                event.isAllDay = true
+                // Block the calendar for 30 minutes at 10 AM tomorrow
+                let start = self.getTomorrow10AM()
+                event.startDate = start
+                event.endDate = start.addingTimeInterval(30 * 60)
+                event.isAllDay = false
                 event.calendar = store.defaultCalendarForNewEvents
+                
+                // Add a 10-minute alert
+                event.addAlarm(EKAlarm(relativeOffset: -10 * 60))
                 
                 do {
                     try store.save(event, span: .thisEvent)
@@ -486,11 +593,16 @@ struct ContentView: View {
                     for item in staleItems {
                         let event = EKEvent(eventStore: store)
                         event.title = item.summary ?? item.text
-                        // Auto-triage sends it to today as an All-Day goal
-                        event.startDate = Date()
-                        event.endDate = Date()
-                        event.isAllDay = true
+                        
+                        // Block 30 minutes at 10 AM tomorrow
+                        let start = self.getTomorrow10AM()
+                        event.startDate = start
+                        event.endDate = start.addingTimeInterval(30 * 60)
+                        event.isAllDay = false
                         event.calendar = store.defaultCalendarForNewEvents
+                        
+                        // Add a 10-minute alert
+                        event.addAlarm(EKAlarm(relativeOffset: -10 * 60))
                         
                         do {
                             try store.save(event, span: .thisEvent)
@@ -516,6 +628,131 @@ struct ContentView: View {
         } else {
             store.requestAccess(to: .event, completion: completion)
         }
+    }
+}
+
+struct IntelligenceTextEditorView: View {
+    @Bindable var item: VoitodoItem
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color(UIColor.systemGroupedBackground)
+                .ignoresSafeArea()
+            
+            IntelligenceTextView(item: item)
+                .ignoresSafeArea(.keyboard)
+            
+            HStack {
+                Button("Cancel") {
+                    dismiss()
+                }
+                .font(.body)
+                .foregroundColor(.red)
+                
+                Spacer()
+                
+                Button("Done") {
+                    // Force final buffer flush
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        try? item.modelContext?.save()
+                        item.modelContext?.processPendingChanges()
+                        dismiss()
+                    }
+                }
+                .font(.headline)
+            }
+            .padding()
+        }
+    }
+}
+
+struct IntelligenceTextView: UIViewRepresentable {
+    @Bindable var item: VoitodoItem
+
+    func makeUIView(context: Context) -> UITextView {
+        let textView = UITextView()
+        textView.font = .systemFont(ofSize: 18, weight: .regular)
+        textView.backgroundColor = .systemGroupedBackground
+        textView.textContainerInset = UIEdgeInsets(top: 60, left: 16, bottom: 20, right: 16)
+        textView.isEditable = true
+        textView.delegate = context.coordinator
+        textView.contentInsetAdjustmentBehavior = .never
+
+        if #available(iOS 18.0, *) {
+            textView.writingToolsBehavior = .complete
+            textView.allowsEditingTextAttributes = true
+        }
+
+        return textView
+    }
+
+    func updateUIView(_ uiView: UITextView, context: Context) {
+        // Safe "Initial Pull" only. 
+        if uiView.text.isEmpty && !item.text.isEmpty {
+            uiView.text = item.text
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, UITextViewDelegate {
+        var parent: IntelligenceTextView
+
+        init(_ parent: IntelligenceTextView) {
+            self.parent = parent
+        }
+
+        func textViewDidChange(_ textView: UITextView) {
+            parent.item.text = textView.text
+            parent.item.summary = nil // Explicitly clear summary so UI falls back to new text
+        }
+        
+        func textViewDidEndEditing(_ textView: UITextView) {
+            parent.item.text = textView.text
+            parent.item.summary = nil
+        }
+    }
+}
+
+extension UIDevice {
+    static var supportsAppleIntelligence: Bool {
+        if #available(iOS 18.1, *) {
+            var systemInfo = utsname()
+            uname(&systemInfo)
+            let machineMirror = Mirror(reflecting: systemInfo.machine)
+            let identifier = machineMirror.children.reduce("") { identifier, element in
+                guard let value = element.value as? Int8, value != 0 else { return identifier }
+                return identifier + String(UnicodeScalar(UInt8(value)))
+            }
+            
+            // Simulator fallbacks
+            if identifier == "i386" || identifier == "x86_64" || identifier == "arm64" { return true }
+            
+            // iPad M-Class (iPad Pro M1/M2/M4, iPad Air M1/M2)
+            if identifier.hasPrefix("iPad13") || identifier.hasPrefix("iPad14") || identifier.hasPrefix("iPad15") || identifier.hasPrefix("iPad16") { return true }
+            
+            // Dynamic iPhone Version Check (Anything A17 Pro or newer)
+            // iPhone 15 Pro = iPhone16,1
+            // iPhone 16 = iPhone17,x
+            // iPhone 17 = iPhone18,x
+            if identifier.hasPrefix("iPhone") {
+                let modelNumbers = identifier.replacingOccurrences(of: "iPhone", with: "").components(separatedBy: ",")
+                if let majorVersion = Int(modelNumbers[0]), majorVersion >= 16 {
+                    return true
+                }
+            }
+            
+            // iPad M-Class (iPad Pro M1/M2/M4, iPad Air M1/M2)
+            if identifier.hasPrefix("iPad13") || identifier.hasPrefix("iPad14") || identifier.hasPrefix("iPad15") || identifier.hasPrefix("iPad16") { return true }
+            
+            return false
+        }
+        return false
     }
 }
 

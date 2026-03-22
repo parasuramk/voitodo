@@ -1,13 +1,26 @@
 import SwiftUI
+import SwiftData
 
 struct SettingsView: View {
+    @AppStorage("showWritingTools") private var showWritingTools = false
+    
     @AppStorage("iCloudSyncEnabled") private var iCloudSyncEnabled = true
     @AppStorage("silenceThreshold") private var silenceThreshold: Double = 3.0
     @AppStorage("undoDurationMinutes") private var undoDurationMinutes: Double = 60.0
     @AppStorage("autoTriageToCalendar") private var autoTriageToCalendar = false
+    @AppStorage("appTheme") private var appTheme: Theme = .system
 
     var body: some View {
         Form {
+            Section(header: Text("Appearance")) {
+                Picker("Theme", selection: $appTheme) {
+                    ForEach(Theme.allCases) { theme in
+                        Text(theme.rawValue).tag(theme)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+            }
+            
             Section(header: Text("Triage"), footer: Text("Automatically push thoughts older than 3 days into your iOS Calendar.")) {
                 Toggle("Auto-Triage to Calendar", isOn: $autoTriageToCalendar)
             }
@@ -40,6 +53,12 @@ struct SettingsView: View {
                 }
             }
             
+            if UIDevice.supportsAppleIntelligence {
+                Section(header: Text("Intelligence"), footer: Text("Enable manual Apple Intelligence formatting on raw thoughts via the Writing Tools modal.")) {
+                    Toggle("Apple Intelligence Tools", isOn: $showWritingTools)
+                }
+            }
+            
             Section(header: Text("About")) {
                 HStack {
                     Text("Version")
@@ -51,6 +70,13 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
+        // Write every setting change back to iCloud KV Store so it survives reinstalls
+        .onChange(of: showWritingTools)    { pushToiCloud("showWritingTools", $0) }
+        .onChange(of: iCloudSyncEnabled)   { pushToiCloud("iCloudSyncEnabled", $0) }
+        .onChange(of: silenceThreshold)    { pushToiCloud("silenceThreshold", $0) }
+        .onChange(of: undoDurationMinutes) { pushToiCloud("undoDurationMinutes", $0) }
+        .onChange(of: autoTriageToCalendar){ pushToiCloud("autoTriageToCalendar", $0) }
+        .onChange(of: appTheme)            { pushToiCloud("appTheme", $0.rawValue) }
     }
 }
 
@@ -58,4 +84,11 @@ struct SettingsView: View {
     NavigationStack {
         SettingsView()
     }
+}
+
+// MARK: - Helpers
+
+private func pushToiCloud(_ key: String, _ value: Any) {
+    NSUbiquitousKeyValueStore.default.set(value, forKey: key)
+    NSUbiquitousKeyValueStore.default.synchronize()
 }

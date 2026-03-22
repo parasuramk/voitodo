@@ -32,7 +32,7 @@ struct VoitodoWidgetEntryView : View {
         ZStack {
             if family == .accessoryCircular {
                 // Lock screen circular widget — use SF Symbol for reliable rendering
-                Image(systemName: "waveform.badge.checkmark")
+                Image(systemName: "smallcircle.filled.circle")
                     .resizable()
                     .scaledToFit()
                     .padding(6)
@@ -40,7 +40,7 @@ struct VoitodoWidgetEntryView : View {
             } else {
                 // Home screen widget
                 VStack {
-                    Image(systemName: "waveform.badge.checkmark")
+                    Image(systemName: "smallcircle.filled.circle")
                         .font(.largeTitle)
                     Text("Capture Thought")
                         .font(.caption)
@@ -52,7 +52,6 @@ struct VoitodoWidgetEntryView : View {
     }
 }
 
-//@main
 struct VoitodoWidget: Widget {
     let kind: String = "VoitodoWidget"
 

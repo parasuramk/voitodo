@@ -28,18 +28,46 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
         }
     }
     
-    // Delegate method handles the background action button taps
+    // Called when the user taps the notification
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        if response.actionIdentifier == "COMPLETE_ACTION" {
-            let identifier = response.notification.request.identifier
-            if identifier.starts(with: "item-") {
-                let uuidString = identifier.replacingOccurrences(of: "item-", with: "")
-                if let id = UUID(uuidString: uuidString) {
+        let identifier = response.notification.request.identifier
+        if identifier.starts(with: "item-") {
+            let uuidString = identifier.replacingOccurrences(of: "item-", with: "")
+            if let id = UUID(uuidString: uuidString) {
+                // Mark bell icon as dismissed
+                markNotificationFired(id: id)
+                
+                // Handle the "Mark Complete" action
+                if response.actionIdentifier == "COMPLETE_ACTION" {
                     markItemComplete(id: id)
                 }
             }
         }
         completionHandler()
+    }
+    
+    // Called when a notification is delivered while the app is in the foreground (auto-delivery)
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        let identifier = notification.request.identifier
+        if identifier.starts(with: "item-") {
+            let uuidString = identifier.replacingOccurrences(of: "item-", with: "")
+            if let id = UUID(uuidString: uuidString) {
+                markNotificationFired(id: id)
+            }
+        }
+        completionHandler([.banner, .sound])
+    }
+    
+    private func markNotificationFired(id: UUID) {
+        Task { @MainActor in
+            let container = voitodoApp.sharedModelContainer
+            let context = container.mainContext
+            let descriptor = FetchDescriptor<VoitodoItem>()
+            if let items = try? context.fetch(descriptor), let item = items.first(where: { $0.id == id }) {
+                item.notificationFired = true
+                try? context.save()
+            }
+        }
     }
     
     private func markItemComplete(id: UUID) {
