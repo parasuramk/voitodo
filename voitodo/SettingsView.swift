@@ -63,11 +63,11 @@ struct SettingsView: View {
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
         // Write every setting change back to iCloud KV Store so it survives reinstalls
-        .onChange(of: iCloudSyncEnabled)   { pushToiCloud("iCloudSyncEnabled", $0) }
-        .onChange(of: silenceThreshold)    { pushToiCloud("silenceThreshold", $0) }
-        .onChange(of: undoDurationMinutes) { pushToiCloud("undoDurationMinutes", $0) }
-        .onChange(of: autoTriageToCalendar){ pushToiCloud("autoTriageToCalendar", $0) }
-        .onChange(of: appTheme)            { pushToiCloud("appTheme", $0.rawValue) }
+        .onChange(of: iCloudSyncEnabled)   { _, v in pushToiCloud("iCloudSyncEnabled", v) }
+        .onChange(of: silenceThreshold)    { _, v in pushToiCloud("silenceThreshold", v) }
+        .onChange(of: undoDurationMinutes) { _, v in pushToiCloud("undoDurationMinutes", v) }
+        .onChange(of: autoTriageToCalendar){ _, v in pushToiCloud("autoTriageToCalendar", v) }
+        .onChange(of: appTheme)            { _, v in pushToiCloud("appTheme", v.rawValue) }
     }
 }
 
