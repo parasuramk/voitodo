@@ -103,31 +103,31 @@ struct ContentView: View {
                             }
                             .scaleEffect(!isRecording && isBreathing ? 1.09 : 1.0)
                             .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isBreathing)
+                            
+                            // One-time first-launch hint — fades out the moment recording starts
+                            if !hasSeenRecordingTip && !isRecording {
+                                VStack(spacing: 4) {
+                                    Text("Also try:")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundColor(.secondary)
+                                        .textCase(.uppercase)
+                                        .tracking(0.5)
+                                    
+                                    Text("Action Button · Lock Screen Widget")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.secondary)
+                                    
+                                    Text("\"Hey Siri, Capture a thought in Whatodo\"")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(.horizontal, 32)
+                                .transition(.opacity)
+                            }
                         }
                         .padding(.top, 5)
                         .padding(.bottom, 10)
-                        
-                        // One-time first-launch hint — fades out the moment recording starts
-                        if !hasSeenRecordingTip && !isRecording {
-                            VStack(spacing: 4) {
-                                Text("Also try:")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.secondary)
-                                    .textCase(.uppercase)
-                                    .tracking(0.5)
-                                
-                                Text("Action Button · Lock Screen Widget")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.secondary)
-                                
-                                Text("\"Hey Siri, Capture a thought in Whatodo\"")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .padding(.horizontal, 32)
-                            .transition(.opacity)
-                        }
                     }
                     .zIndex(1)
                 
