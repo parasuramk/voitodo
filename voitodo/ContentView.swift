@@ -15,6 +15,7 @@ struct ContentView: View {
     @AppStorage("hideCompleted") private var hideCompleted = false
     @AppStorage("undoDurationMinutes") private var undoDurationMinutes: Double = 60.0
     @AppStorage("autoTriageToCalendar") private var autoTriageToCalendar = false
+    @AppStorage("hasSeenRecordingTip") private var hasSeenRecordingTip = false
     
     @State private var intelligenceItem: VoitodoItem? = nil
 
@@ -105,6 +106,28 @@ struct ContentView: View {
                         }
                         .padding(.top, 5)
                         .padding(.bottom, 10)
+                        
+                        // One-time first-launch hint — fades out the moment recording starts
+                        if !hasSeenRecordingTip && !isRecording {
+                            VStack(spacing: 4) {
+                                Text("Also try:")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(.secondary)
+                                    .textCase(.uppercase)
+                                    .tracking(0.5)
+                                
+                                Text("Action Button · Lock Screen Widget")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary)
+                                
+                                Text("\"Hey Siri, Capture a thought in Whatodo\"")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.horizontal, 32)
+                            .transition(.opacity)
+                        }
                     }
                     .zIndex(1)
                 
@@ -435,7 +458,9 @@ struct ContentView: View {
             }
             
         } else {
-            // Start
+            // Start — dismiss the one-time tip with a fade
+            withAnimation { hasSeenRecordingTip = true }
+            
             // Haptic and Audio cue BEFORE session starts to ensure audibility
             UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
             AudioServicesPlaySystemSound(1113)
