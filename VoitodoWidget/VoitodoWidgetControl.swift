@@ -24,6 +24,33 @@ struct WhatodoControlWidget: ControlWidget {
     }
 }
 
+struct CaptureThoughtIntent: AppIntent {
+    static var title: LocalizedStringResource = "Capture Thought"
+    static var description = IntentDescription("Immediately starts recording a new thought in Whatodo.")
+    static var openAppWhenRun: Bool = true
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        NotificationCenter.default.post(name: Notification.Name("CaptureIntentTriggered"), object: nil)
+        return .result()
+    }
+}
+
+struct VoitodoShortcuts: AppShortcutsProvider {
+    static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: CaptureThoughtIntent(),
+            phrases: [
+                "Capture a thought in \(.applicationName)",
+                "Record a note in \(.applicationName)",
+                "Add a task to \(.applicationName)"
+            ],
+            shortTitle: "Capture Thought",
+            systemImageName: "mic.fill"
+        )
+    }
+}
+
 extension WhatodoControlWidget {
     struct Provider: ControlValueProvider {
         var previewValue: Bool { false }
