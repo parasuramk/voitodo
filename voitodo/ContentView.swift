@@ -96,7 +96,7 @@ struct ContentView: View {
                                             y: colorScheme == .dark ? 0 : 10
                                         )
                                     
-                                    Image(systemName: "sparkles")
+                                    Image(systemName: "mic.fill")
                                         .font(.system(size: 80))
                                         .foregroundColor(colorScheme == .dark ? Color.white.opacity(0.9) : .white)
                                 }

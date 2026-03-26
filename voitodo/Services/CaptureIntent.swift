@@ -34,7 +34,7 @@ struct VoitodoShortcuts: AppShortcutsProvider {
                 "Add a task to \(.applicationName)"
             ],
             shortTitle: "Capture Thought",
-            systemImageName: "sparkles"
+            systemImageName: "mic.fill"
         )
     }
 }
