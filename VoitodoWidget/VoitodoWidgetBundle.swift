@@ -12,6 +12,6 @@ import SwiftUI
 struct VoitodoWidgetBundle: WidgetBundle {
     var body: some Widget {
         VoitodoWidget()
-        VoitodoWidgetControl()
+        WhatodoControlWidget()
     }
 }

@@ -9,46 +9,24 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-struct VoitodoWidgetControl: ControlWidget {
+struct WhatodoControlWidget: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(
-            kind: "pakrishn.voitodo.VoitodoWidget",
+            kind: "pakrishn.voitodo.WhatodoControl",
             provider: Provider()
         ) { value in
-            ControlWidgetToggle(
-                "Start Timer",
-                isOn: value,
-                action: StartTimerIntent()
-            ) { isRunning in
-                Label(isRunning ? "On" : "Off", systemImage: "timer")
+            ControlWidgetButton(action: CaptureThoughtIntent()) {
+                Label("Capture Thought", systemImage: "mic.fill")
             }
         }
-        .displayName("Timer")
-        .description("A an example control that runs a timer.")
+        .displayName("Capture Thought")
+        .description("Instantly open Whatodo to capture a new thought.")
     }
 }
 
-extension VoitodoWidgetControl {
+extension WhatodoControlWidget {
     struct Provider: ControlValueProvider {
-        var previewValue: Bool {
-            false
-        }
-
-        func currentValue() async throws -> Bool {
-            let isRunning = true // Check if the timer is running
-            return isRunning
-        }
-    }
-}
-
-struct StartTimerIntent: SetValueIntent {
-    static let title: LocalizedStringResource = "Start a timer"
-
-    @Parameter(title: "Timer is running")
-    var value: Bool
-
-    func perform() async throws -> some IntentResult {
-        // Start / stop the timer based on `value`.
-        return .result()
+        var previewValue: Bool { false }
+        func currentValue() async throws -> Bool { false }
     }
 }
