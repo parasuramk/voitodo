@@ -142,7 +142,7 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
         } else {
             // Under 5 limit. Schedule as an individual actionable notification.
             let content = UNMutableNotificationContent()
-            content.title = "Voitodo Reminder"
+            content.title = "Whatodo Reminder"
             content.body = text
             content.sound = .default
             content.categoryIdentifier = "VOITODO_ITEM"
@@ -161,7 +161,7 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
     
     private func updateSummaryNotification(count: Int, dateComponents: DateComponents) async {
         let content = UNMutableNotificationContent()
-        content.title = "Voitodo Summary"
+        content.title = "Whatodo Summary"
         content.body = "You captured \(count) thoughts yesterday. Open the app to review them."
         content.sound = .default
         content.threadIdentifier = "voitodo.reminders.daily"

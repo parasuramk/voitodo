@@ -61,7 +61,7 @@ struct VoitodoWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Capture Thought")
-        .description("Instantly open Voitodo to capture a new thought.")
+        .description("Instantly open Whatodo to capture a new thought.")
         .supportedFamilies([.systemSmall, .accessoryCircular])
     }
 }

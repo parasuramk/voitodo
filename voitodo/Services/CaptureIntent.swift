@@ -4,7 +4,7 @@ import SwiftData
 
 struct CaptureThoughtIntent: AppIntent {
     static var title: LocalizedStringResource = "Capture Thought"
-    static var description = IntentDescription("Immediately starts recording a new thought in voitodo.")
+    static var description = IntentDescription("Immediately starts recording a new thought in Whatodo.")
     
     // This allows it to appear when configuring the iPhone Action Button
     static var openAppWhenRun: Bool = true
