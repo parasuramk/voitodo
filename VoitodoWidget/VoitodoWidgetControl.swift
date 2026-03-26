@@ -16,7 +16,7 @@ struct WhatodoControlWidget: ControlWidget {
             provider: Provider()
         ) { value in
             ControlWidgetButton(action: CaptureThoughtIntent()) {
-                Label("Capture Thought", systemImage: "mic.fill")
+                Label("Capture Thought", systemImage: "sparkles")
             }
         }
         .displayName("Capture Thought")
@@ -46,7 +46,7 @@ struct VoitodoShortcuts: AppShortcutsProvider {
                 "Add a task to \(.applicationName)"
             ],
             shortTitle: "Capture Thought",
-            systemImageName: "mic.fill"
+            systemImageName: "sparkles"
         )
     }
 }

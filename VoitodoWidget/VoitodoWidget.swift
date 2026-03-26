@@ -32,7 +32,7 @@ struct VoitodoWidgetEntryView : View {
         ZStack {
             if family == .accessoryCircular {
                 // Lock screen circular widget — use SF Symbol for reliable rendering
-                Image(systemName: "mic.fill")
+                Image(systemName: "sparkles")
                     .resizable()
                     .scaledToFit()
                     .padding(6)
@@ -40,7 +40,7 @@ struct VoitodoWidgetEntryView : View {
             } else {
                 // Home screen widget
                 VStack {
-                    Image(systemName: "mic.fill")
+                    Image(systemName: "sparkles")
                         .font(.largeTitle)
                     Text("Capture Thought")
                         .font(.caption)
