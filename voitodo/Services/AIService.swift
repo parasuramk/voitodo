@@ -53,30 +53,71 @@ class AIService {
         
         if !hasIntent { return (false, nil) }
         
-        // Define the verified product dictionary. 
+        // Define the verified product dictionary.
         // We sort by length descending to prioritize multi-word matches ("running shoes") over singles ("shoes").
         let productKeywords = [
-            "running shoes", "shoes", "milk", "eggs", "bread", 
-            "phone charger", "charger", "groceries", "rice", "dal", "vegetables", "oil",
-            "laptop", "gift", "watch", "perfume", "formal shirts", "shirts", "t-shirts", 
-            "medicines", "headset"
+            // Fashion & Footwear
+            "running shoes", "sports shoes", "formal shoes", "ethnic wear", "formal shirt",
+            "anniversary gift", "birthday gift", "diwali gift",
+            "shoes", "sneakers", "sandals", "slippers", "boots",
+            "shirt", "t-shirt", "jeans", "trousers", "kurta", "saree", "salwar",
+            "watch", "belt", "wallet", "bag", "backpack", "handbag",
+
+            // Electronics & Accessories
+            "bluetooth speaker", "washing machine", "power bank", "hard disk", "phone charger",
+            "phone", "smartphone", "charger", "earphones", "headphones",
+            "laptop", "tablet", "mouse", "keyboard", "pendrive", "ssd",
+            "fan", "cooler", "ac", "refrigerator", "microwave", "tv",
+
+            // Daily Essentials & Groceries
+            "cleaning products", "toothpaste",
+            "milk", "bread", "eggs", "rice", "dal", "atta", "oil", "sugar", "tea", "coffee",
+            "vegetables", "fruits", "spices", "masala", "snacks", "biscuits", "chocolate",
+            "soap", "shampoo", "detergent",
+
+            // Health & Personal Care
+            "protein powder", "whey protein", "face wash", "moisturizer",
+            "medicine", "syrup", "ointment", "cream", "vitamins", "supplements",
+
+            // Home & Kitchen
+            "extension board", "mattress", "bedsheet", "curtain", "furniture",
+            "chair", "table", "pillow", "bulb", "switch", "plug", "wire", "inverter",
+
+            // Beauty & Personal Care
+            "hair oil", "perfume", "deodorant", "lipstick", "makeup", "comb", "trimmer",
+
+            // Travel & Booking
+            "flight", "train", "hotel", "ticket", "booking", "bus", "cab", "ola", "uber",
+
+            // Gifts & Occasion
+            "gift", "present"
         ].sorted(by: { $0.count > $1.count })
         
         var foundProducts: [String] = []
-        var searchString = textLower 
+        var searchString = textLower
         
         for product in productKeywords {
-            if searchString.contains(product) {
+            // Use word-boundary matching for very short keywords to prevent
+            // sub-string false positives (e.g. "ac" inside "headache", "tv" inside "activity")
+            let shortKeywords: Set<String> = ["ac", "tv", "bus", "cab", "ola", "ssd", "fan", "bag", "tea", "oil", "dal"]
+            let matched: Bool
+            if shortKeywords.contains(product) {
+                // Check that the keyword is surrounded by non-alphanumeric characters
+                let pattern = "(?<![a-z0-9])\(NSRegularExpression.escapedPattern(for: product))(?![a-z0-9])"
+                matched = (try? NSRegularExpression(pattern: pattern))?.firstMatch(
+                    in: searchString, range: NSRange(searchString.startIndex..., in: searchString)
+                ) != nil
+            } else {
+                matched = searchString.contains(product)
+            }
+            
+            if matched {
                 foundProducts.append(product)
-                // Mask the matched substring to avoid sub-matches (e.g., matching "shoes" after "running shoes")
                 searchString = searchString.replacingOccurrences(of: product, with: "")
             }
         }
         
-        if foundProducts.isEmpty {
-            return (false, nil)
-        }
-        
+        if foundProducts.isEmpty { return (false, nil) }
         return (true, foundProducts.joined(separator: " "))
     }
 }
