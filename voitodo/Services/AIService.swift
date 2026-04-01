@@ -33,4 +33,31 @@ class AIService {
         // If it was completely filtered out, just return the original transcript
         return cleanText.isEmpty ? transcript : cleanText
     }
+    
+    /// Detects commercial intent and extracts the purchase item (e.g., "buy an ergonomic chair" -> "an ergonomic chair")
+    func detectShoppingIntent(in text: String) -> (isShopping: Bool, query: String?) {
+        let textLower = text.lowercased()
+        let shoppingVerbs = ["buy", "order", "purchase", "get a new", "shop for"]
+        
+        for verb in shoppingVerbs {
+            if let range = textLower.range(of: verb) {
+                let queryRaw = String(text[range.upperBound...])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .trimmingCharacters(in: .punctuationCharacters)
+                
+                let stopWords = [" from", " on", " at", " because", " so", " tomorrow", " for"]
+                var finalQuery = queryRaw
+                for stop in stopWords {
+                    if let stopRange = finalQuery.lowercased().range(of: stop) {
+                        finalQuery = String(finalQuery[..<stopRange.lowerBound])
+                    }
+                }
+                
+                if !finalQuery.isEmpty {
+                    return (true, finalQuery.trimmingCharacters(in: .whitespaces))
+                }
+            }
+        }
+        return (false, nil)
+    }
 }

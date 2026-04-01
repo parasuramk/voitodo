@@ -243,6 +243,15 @@ struct ContentView: View {
                                         Label("Complete", systemImage: "checkmark")
                                     }
                                     .tint(.green)
+                                    
+                                    if AffiliateService.shared.canShowAffiliateLinks(), item.intentType == "shopping", let query = item.affiliateQuery, let url = AffiliateService.shared.generateAmazonIndiaURL(for: query) {
+                                        Button {
+                                            UIApplication.shared.open(url)
+                                        } label: {
+                                            Label("Shop", systemImage: "bag.fill")
+                                        }
+                                        .tint(.purple)
+                                    }
                                 }
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
