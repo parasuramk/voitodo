@@ -51,3 +51,5 @@ playground.xcworkspace
 #
 # Add this line if you want to avoid checking in build files from CocoaPods.
 # Podfile.lock
+test_intents.swift
+testshopping.swift

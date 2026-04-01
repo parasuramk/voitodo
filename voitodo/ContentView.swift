@@ -16,6 +16,7 @@ struct ContentView: View {
     @AppStorage("undoDurationMinutes") private var undoDurationMinutes: Double = 60.0
     @AppStorage("autoTriageToCalendar") private var autoTriageToCalendar = false
     @AppStorage("hasSeenRecordingTip") private var hasSeenRecordingTip = false
+    @AppStorage("isShoppingSuggestionsEnabled") private var isShoppingSuggestionsEnabled = false
     
     @State private var intelligenceItem: VoitodoItem? = nil
 
@@ -243,6 +244,18 @@ struct ContentView: View {
                                         Label("Complete", systemImage: "checkmark")
                                     }
                                     .tint(.green)
+                                    
+                                    if isShoppingSuggestionsEnabled && AffiliateService.shared.isIndiaRegion() {
+                                        if let query = AIService.shared.detectShoppingIntent(in: item.summary ?? item.text).query,
+                                           let url = AffiliateService.shared.generateAmazonIndiaURL(for: query) {
+                                            Button {
+                                                UIApplication.shared.open(url)
+                                            } label: {
+                                                Label("Shop", systemImage: "bag.fill")
+                                            }
+                                            .tint(.purple)
+                                        }
+                                    }
                                 }
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -446,11 +459,14 @@ struct ContentView: View {
                 
                 Task { @MainActor in
                     let generatedSummary = await AIService.shared.summarize(transcript: rawText)
+                    let intentResult = AIService.shared.detectShoppingIntent(in: generatedSummary)
                     
                     let newItem = VoitodoItem(
                         text: rawText,
                         audioFileURL: audioURL,
-                        summary: generatedSummary
+                        summary: generatedSummary,
+                        intentType: intentResult.isShopping ? "shopping" : nil,
+                        affiliateQuery: intentResult.query
                     )
                     
                     // Get the reminder date and schedule the hybrid notification

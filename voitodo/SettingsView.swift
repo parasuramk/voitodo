@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage("undoDurationMinutes") private var undoDurationMinutes: Double = 60.0
     @AppStorage("autoTriageToCalendar") private var autoTriageToCalendar = false
     @AppStorage("appTheme") private var appTheme: Theme = .system
+    @AppStorage("isShoppingSuggestionsEnabled") private var isShoppingSuggestionsEnabled = false
 
     var body: some View {
         Form {
@@ -36,6 +37,12 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                     }
                     Slider(value: $undoDurationMinutes, in: 0...120, step: 10)
+                }
+            }
+            
+            if AffiliateService.shared.isIndiaRegion() {
+                Section(header: Text("Smart Integrations"), footer: Text("AI detects products you mention and adds a quick shop link to the swipe menu.")) {
+                    Toggle("Smart Shopping Suggestions", isOn: $isShoppingSuggestionsEnabled)
                 }
             }
             
