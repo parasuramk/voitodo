@@ -34,61 +34,49 @@ class AIService {
         return cleanText.isEmpty ? transcript : cleanText
     }
     
-    /// Detects commercial intent and extracts the purchase item (e.g., "buy an ergonomic chair" -> "an ergonomic chair")
+    /// Detects commercial intent and extracts the purchase item (e.g., "buy an ergonomic chair" -> "chair")
+    /// Uses a primary list to detect intent and a secondary dictionary to extract the verified product noun.
     func detectShoppingIntent(in text: String) -> (isShopping: Bool, query: String?) {
         let textLower = text.lowercased()
         
-        let triggers = [
-            "need to buy", "want to buy", "looking to buy", "going to buy",
-            "want to order", "need to order", 
-            "need to get", "want to get", "have to get",
-            "looking for a", "looking for", 
-            "need new", "get a new", "buy a new", "buy new", 
-            "shop for", "order some", "buy some", "get some", "get groceries",
-            "purchase", "buy", "order"
+        let intentKeywords = [
+            "buy", "order", "purchase", "get", "looking for", "shop for", "find", "need"
         ]
         
-        var queryRaw = ""
-        var found = false
-        
-        for trigger in triggers {
-            if let range = textLower.range(of: trigger) {
-                queryRaw = String(text[range.upperBound...])
-                found = true
+        var hasIntent = false
+        for intent in intentKeywords {
+            if textLower.contains(intent) {
+                hasIntent = true
                 break
             }
         }
         
-        if !found { return (false, nil) }
+        if !hasIntent { return (false, nil) }
         
-        var finalQuery = queryRaw.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Define the verified product dictionary. 
+        // We sort by length descending to prioritize multi-word matches ("running shoes") over singles ("shoes").
+        let productKeywords = [
+            "running shoes", "shoes", "milk", "eggs", "bread", 
+            "phone charger", "charger", "groceries", "rice", "dal", "vegetables", "oil",
+            "laptop", "gift", "watch", "perfume", "formal shirts", "shirts", "t-shirts", 
+            "medicines", "headset"
+        ].sorted(by: { $0.count > $1.count })
         
-        // Boundaries to split extra clauses or descriptors that break Amazon search
-        let clauseBoundaries = [
-            ", the ", ", my ", ", it ", " because ", " so ", " but ", " for ", " on ", " at "
-        ]
+        var foundProducts: [String] = []
+        var searchString = textLower 
         
-        for boundary in clauseBoundaries {
-            if let range = finalQuery.lowercased().range(of: boundary) {
-                finalQuery = String(finalQuery[..<range.lowerBound])
+        for product in productKeywords {
+            if searchString.contains(product) {
+                foundProducts.append(product)
+                // Mask the matched substring to avoid sub-matches (e.g., matching "shoes" after "running shoes")
+                searchString = searchString.replacingOccurrences(of: product, with: "")
             }
         }
         
-        // Clean prefixes that dilute the actual noun
-        finalQuery = finalQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        if finalQuery.lowercased().hasPrefix("a ") { finalQuery.removeFirst(2) }
-        if finalQuery.lowercased().hasPrefix("some ") { finalQuery.removeFirst(5) }
-        
-        finalQuery = finalQuery.trimmingCharacters(in: .whitespaces)
-        
-        // Clean trailing punctuation
-        while finalQuery.hasSuffix(".") || finalQuery.hasSuffix(",") || finalQuery.hasSuffix("-") {
-            finalQuery.removeLast()
-            finalQuery = finalQuery.trimmingCharacters(in: .whitespaces)
+        if foundProducts.isEmpty {
+            return (false, nil)
         }
         
-        if finalQuery.isEmpty { return (false, nil) }
-        
-        return (true, finalQuery)
+        return (true, foundProducts.joined(separator: " "))
     }
 }
