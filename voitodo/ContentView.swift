@@ -45,6 +45,18 @@ struct ContentView: View {
             return "Older"
         }
     }
+    
+    // Formats the reminder date dynamically based on the current day context
+    private func formattedReminderTime(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        let timeString = formatter.string(from: date)
+        
+        if Calendar.current.isDateInTomorrow(date) {
+            return "Tomorrow \(timeString)"
+        }
+        return timeString
+    }
 
     // Items in pendingCompleted are still treated as "active" for sort purposes.
     private var sortedItems: [VoitodoItem] {
@@ -172,7 +184,7 @@ struct ContentView: View {
                                                 Image(systemName: "bell.fill")
                                                     .font(.system(size: 11))
                                                     .foregroundColor(Color(UIColor.lightGray))
-                                                Text(reminderDate, style: .time)
+                                                Text(formattedReminderTime(for: reminderDate))
                                                     .font(.system(size: 13))
                                                     .foregroundColor(Color(UIColor.lightGray))
                                             }
