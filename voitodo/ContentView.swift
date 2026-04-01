@@ -455,11 +455,14 @@ struct ContentView: View {
                 
                 Task { @MainActor in
                     let generatedSummary = await AIService.shared.summarize(transcript: rawText)
+                    let intentResult = AIService.shared.detectShoppingIntent(in: generatedSummary)
                     
                     let newItem = VoitodoItem(
                         text: rawText,
                         audioFileURL: audioURL,
-                        summary: generatedSummary
+                        summary: generatedSummary,
+                        intentType: intentResult.isShopping ? "shopping" : nil,
+                        affiliateQuery: intentResult.query
                     )
                     
                     // Get the reminder date and schedule the hybrid notification
