@@ -1,0 +1,39 @@
+{
+  "fashion_footwear": [
+    "running shoes", "sports shoes", "formal shoes",
+    "shoes", "sneakers", "sandals", "slippers", "boots",
+    "formal shirt", "ethnic wear",
+    "shirt", "t-shirt", "jeans", "trousers", "kurta", "saree", "salwar",
+    "watch", "belt", "wallet", "backpack", "handbag", "bag"
+  ],
+  "electronics_accessories": [
+    "bluetooth speaker", "washing machine", "power bank", "hard disk", "phone charger",
+    "phone", "smartphone", "charger", "earphones", "headphones",
+    "laptop", "tablet", "mouse", "keyboard", "pendrive", "ssd",
+    "fan", "cooler", "ac", "refrigerator", "microwave", "tv"
+  ],
+  "daily_essentials_groceries": [
+    "cleaning products", "toothpaste",
+    "milk", "bread", "eggs", "rice", "dal", "atta", "oil", "sugar", "tea", "coffee",
+    "vegetables", "fruits", "spices", "masala", "snacks", "biscuits", "chocolate",
+    "soap", "shampoo", "detergent"
+  ],
+  "health_personal_care": [
+    "protein powder", "whey protein", "face wash", "moisturizer",
+    "medicine", "syrup", "ointment", "cream", "vitamins", "supplements"
+  ],
+  "home_kitchen": [
+    "extension board", "mattress", "bedsheet", "curtain", "furniture",
+    "chair", "table", "pillow", "bulb", "switch", "plug", "wire", "inverter"
+  ],
+  "beauty_personal_care": [
+    "hair oil", "perfume", "deodorant", "lipstick", "makeup", "comb", "trimmer"
+  ],
+  "travel_booking": [
+    "flight", "train", "hotel", "ticket", "booking", "bus", "cab", "ola", "uber"
+  ],
+  "gifts_occasions": [
+    "anniversary gift", "birthday gift", "diwali gift",
+    "gift", "present"
+  ]
+}
