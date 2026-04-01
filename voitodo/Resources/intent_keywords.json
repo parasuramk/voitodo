@@ -1,15 +1,19 @@
-[
-  "buy",
-  "order",
-  "purchase",
-  "get",
-  "looking for",
-  "shop for",
-  "find",
-  "need",
-  "birthday",
-  "anniversary",
-  "diwali",
-  "wedding",
-  "festival"
-]
+{
+  "strong": [
+    "buy",
+    "order",
+    "purchase",
+    "shop for"
+  ],
+  "context": [
+    "get",
+    "looking for",
+    "find",
+    "need",
+    "birthday",
+    "anniversary",
+    "diwali",
+    "wedding",
+    "festival"
+  ]
+}
