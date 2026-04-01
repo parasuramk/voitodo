@@ -105,19 +105,25 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
     }
     
     // Non-async func purely to calculate tomorrow's date for UI display
-    func getTomorrow9AM() -> Date? {
-        var dateComponents = Calendar.current.dateComponents([.year, .month, .day], from: Date())
-        if let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) {
-            let tomorrowComponents = Calendar.current.dateComponents([.year, .month, .day], from: tomorrow)
-            dateComponents.year = tomorrowComponents.year
-            dateComponents.month = tomorrowComponents.month
-            dateComponents.day = tomorrowComponents.day
-            dateComponents.hour = 9
-            dateComponents.minute = 0
-            dateComponents.second = Int.random(in: 0...59)
-            return Calendar.current.date(from: dateComponents)
+    // Non-async func to calculate the next 9:00 AM presentation with a minimum 3-hour breathing room
+    func getNextReminderDate() -> Date? {
+        let now = Date()
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: now)
+        components.hour = 9
+        components.minute = 0
+        components.second = Int.random(in: 0...59) // Randomize second slightly to avoid exact collision
+        
+        guard let todays9AM = Calendar.current.date(from: components) else { return nil }
+        
+        let difference = todays9AM.timeIntervalSince(now)
+        
+        if difference >= 3 * 3600 {
+            // It's 3+ hours before today's 9:00 AM (e.g. 5:00 AM), schedule for today at 9:00 AM
+            return todays9AM
+        } else {
+            // Less than 3 hours or already past 9:00 AM, schedule for tomorrow at 9:00 AM
+            return Calendar.current.date(byAdding: .day, value: 1, to: todays9AM)
         }
-        return nil
     }
 
     func scheduleHybridReminder(text: String, id: UUID, triggerDate: Date) async {

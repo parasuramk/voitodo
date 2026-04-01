@@ -442,7 +442,7 @@ struct ContentView: View {
                     )
                     
                     // Get the reminder date and schedule the hybrid notification
-                    if let scheduledDate = ReminderService.shared.getTomorrow9AM() {
+                    if let scheduledDate = ReminderService.shared.getNextReminderDate() {
                         newItem.reminderDate = scheduledDate
                         
                         let capturedText = newItem.summary ?? newItem.text
