@@ -38,8 +38,15 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
                 markNotificationFired(id: id)
                 
                 // Handle the "Mark Complete" action
+                // IMPORTANT: completionHandler must be called INSIDE the Task so iOS does not
+                // clean up the background process before the SwiftData write completes.
+                // This was causing silent failures when triggered from the lock screen (app not running).
                 if response.actionIdentifier == "COMPLETE_ACTION" {
-                    markItemComplete(id: id)
+                    Task {
+                        await markItemCompleteAsync(id: id)
+                        completionHandler()
+                    }
+                    return  // completionHandler will be called by the Task above
                 }
             }
         }
@@ -66,6 +73,22 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
             if let items = try? context.fetch(descriptor), let item = items.first(where: { $0.id == id }) {
                 item.notificationFired = true
                 try? context.save()
+            }
+        }
+    }
+    
+    /// Async version of markItemComplete — awaitable so the notification completionHandler
+    /// is only called after the SwiftData write is guaranteed to finish.
+    private func markItemCompleteAsync(id: UUID) async {
+        await MainActor.run {
+            let container = voitodoApp.sharedModelContainer
+            let context = container.mainContext
+            let descriptor = FetchDescriptor<VoitodoItem>()
+            if let items = try? context.fetch(descriptor), let item = items.first(where: { $0.id == id }) {
+                item.isCompleted = true
+                item.completionDate = Date()
+                try? context.save()
+                updateBadgeCount()
             }
         }
     }
