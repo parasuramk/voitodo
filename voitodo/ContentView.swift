@@ -52,9 +52,17 @@ struct ContentView: View {
         formatter.timeStyle = .short
         let timeString = formatter.string(from: date)
         
-        if Calendar.current.isDateInTomorrow(date) {
-            return "Tomorrow \(timeString)"
+        // Only explicitly say "Tomorrow" during the 6 AM to 9 AM incubation window
+        // because that's the only time when both "due today" and "due tomorrow" 
+        // thoughts can exist simultaneously. Once past 9 AM, "9:00 AM" implicitly 
+        // means tomorrow.
+        let hour = Calendar.current.component(.hour, from: Date())
+        if hour >= 6 && hour < 9 {
+            if Calendar.current.isDateInTomorrow(date) {
+                return "Tomorrow \(timeString)"
+            }
         }
+        
         return timeString
     }
 
