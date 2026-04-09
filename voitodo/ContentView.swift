@@ -6,6 +6,10 @@ import AudioToolbox
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
+    
+    @State private var uiRefreshTrigger = UUID()
+    
     @Query(sort: \VoitodoItem.timestamp, order: .reverse) private var items: [VoitodoItem]
 
     // Tracks items visually marked complete but not yet moved in the list.
@@ -21,6 +25,7 @@ struct ContentView: View {
 
     // Calculates opacity based on how old the thought is (Visual Decay)
     private func decayOpacity(for timestamp: Date) -> Double {
+        _ = uiRefreshTrigger
         let ageInDays = Date().timeIntervalSince(timestamp) / (60 * 60 * 24)
         if ageInDays < 1.0 {
             // Day 1: Fresh
@@ -36,6 +41,7 @@ struct ContentView: View {
 
     // Returns a human-friendly relative day label for a timestamp
     private func relativeDayLabel(for date: Date) -> String {
+        _ = uiRefreshTrigger
         let calendar = Calendar.current
         if calendar.isDateInToday(date) {
             return "Today"
@@ -48,6 +54,7 @@ struct ContentView: View {
     
     // Formats the reminder date dynamically based on the current day context
     private func formattedReminderTime(for date: Date) -> String {
+        _ = uiRefreshTrigger
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         let timeString = formatter.string(from: date)
@@ -383,6 +390,12 @@ struct ContentView: View {
                 }
                 runAutoTriage()
             }
+            .onChange(of: scenePhase) { newPhase in
+                if newPhase == .active {
+                    uiRefreshTrigger = UUID()
+                    scheduleTargetedRefresh()
+                }
+            }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("CaptureIntentTriggered"))) { _ in
                 // If launched via Action Button or Siri, immediately start recording if not already doing so
                 if !isRecording {
@@ -396,6 +409,25 @@ struct ContentView: View {
                         toggleRecording()
                     }
                 }
+            }
+        }
+    }
+    
+    private func scheduleTargetedRefresh() {
+        let now = Date()
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.hour, .minute, .second], from: now)
+        guard let hour = components.hour, hour >= 6, hour < 9 else { return }
+        
+        var target = calendar.dateComponents([.year, .month, .day], from: now)
+        target.hour = 9
+        target.minute = 0
+        target.second = 1
+        
+        if let targetDate = calendar.date(from: target) {
+            let delay = targetDate.timeIntervalSince(now)
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                uiRefreshTrigger = UUID()
             }
         }
     }
