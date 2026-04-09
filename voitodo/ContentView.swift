@@ -390,7 +390,7 @@ struct ContentView: View {
                 }
                 runAutoTriage()
             }
-            .onChange(of: scenePhase) { newPhase in
+            .onChange(of: scenePhase) { oldPhase, newPhase in
                 if newPhase == .active {
                     uiRefreshTrigger = UUID()
                     scheduleTargetedRefresh()
