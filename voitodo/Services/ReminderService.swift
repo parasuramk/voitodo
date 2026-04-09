@@ -34,20 +34,12 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
         if identifier.starts(with: "item-") {
             let uuidString = identifier.replacingOccurrences(of: "item-", with: "")
             if let id = UUID(uuidString: uuidString) {
-                // Mark bell icon as dismissed
-                markNotificationFired(id: id)
-                
-                // Handle the "Mark Complete" action
-                // IMPORTANT: completionHandler must be called INSIDE the Task so iOS does not
-                // clean up the background process before the SwiftData write completes.
-                // This was causing silent failures when triggered from the lock screen (app not running).
-                if response.actionIdentifier == "COMPLETE_ACTION" {
-                    Task {
-                        await markItemCompleteAsync(id: id)
-                        completionHandler()
-                    }
-                    return  // completionHandler will be called by the Task above
+                // Ensure atomic execution of both "fired" state and "completed" state if applicable
+                Task {
+                    await processNotificationAction(id: id, actionIdentifier: response.actionIdentifier)
+                    completionHandler()
                 }
+                return
             }
         }
         completionHandler()
@@ -59,49 +51,46 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
         if identifier.starts(with: "item-") {
             let uuidString = identifier.replacingOccurrences(of: "item-", with: "")
             if let id = UUID(uuidString: uuidString) {
-                markNotificationFired(id: id)
+                Task {
+                    await processNotificationAction(id: id, actionIdentifier: nil)
+                    completionHandler([.banner, .sound])
+                }
+                return
             }
         }
         completionHandler([.banner, .sound])
     }
     
-    private func markNotificationFired(id: UUID) {
-        Task { @MainActor in
-            let container = voitodoApp.sharedModelContainer
-            let context = container.mainContext
-            let descriptor = FetchDescriptor<VoitodoItem>()
-            if let items = try? context.fetch(descriptor), let item = items.first(where: { $0.id == id }) {
-                item.notificationFired = true
-                try? context.save()
-            }
-        }
-    }
-    
-    /// Async version of markItemComplete — awaitable so the notification completionHandler
-    /// is only called after the SwiftData write is guaranteed to finish.
-    private func markItemCompleteAsync(id: UUID) async {
+    /// Consolidated, atomic handler for notification actions. 
+    /// This prevents race conditions where iOS terminates a second task while the first is still saving.
+    private func processNotificationAction(id: UUID, actionIdentifier: String?) async {
         await MainActor.run {
             let container = voitodoApp.sharedModelContainer
             let context = container.mainContext
             let descriptor = FetchDescriptor<VoitodoItem>()
+            
             if let items = try? context.fetch(descriptor), let item = items.first(where: { $0.id == id }) {
-                item.isCompleted = true
-                item.completionDate = Date()
-                try? context.save()
-                updateBadgeCount()
-            }
-        }
-    }
-    
-    private func markItemComplete(id: UUID) {
-        Task { @MainActor in
-            let container = voitodoApp.sharedModelContainer
-            let context = container.mainContext
-            let descriptor = FetchDescriptor<VoitodoItem>()
-            if let items = try? context.fetch(descriptor), let item = items.first(where: { $0.id == id }) {
-                item.isCompleted = true
-                try? context.save()
-                updateBadgeCount()
+                var requiresSave = false
+                
+                // 1. Always mark fired (since it was delivered/tapped)
+                if !item.notificationFired {
+                    item.notificationFired = true
+                    requiresSave = true
+                }
+                
+                // 2. Mark complete if requested
+                if actionIdentifier == "COMPLETE_ACTION" && !item.isCompleted {
+                    item.isCompleted = true
+                    item.completionDate = Date()
+                    requiresSave = true
+                }
+                
+                if requiresSave {
+                    try? context.save()
+                    if actionIdentifier == "COMPLETE_ACTION" {
+                        updateBadgeCount()
+                    }
+                }
             }
         }
     }
