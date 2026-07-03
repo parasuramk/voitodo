@@ -131,7 +131,50 @@ class AIService {
             }
         }
 
-        if foundProducts.isEmpty { return (false, nil) }
+        if foundProducts.isEmpty {
+            // Fallback: If strong intent is present, try extracting the query using NLP tagger
+            if hasStrongIntent, let nlpQuery = extractProductUsingNLP(from: textLower) {
+                return (true, nlpQuery)
+            }
+            return (false, nil)
+        }
         return (true, foundProducts.joined(separator: " "))
+    }
+
+    private func extractProductUsingNLP(from text: String) -> String? {
+        let tagger = NLTagger(tagSchemes: [.lexicalClass])
+        tagger.string = text
+        
+        var words: [String] = []
+        let options: NLTagger.Options = [.omitWhitespace, .omitPunctuation]
+        
+        tagger.enumerateTags(in: text.startIndex..<text.endIndex, unit: .word, scheme: .lexicalClass, options: options) { tag, tokenRange in
+            let word = String(text[tokenRange]).lowercased()
+            
+            // Filter out strong intent verbs, context intent keywords, and negation keywords
+            // Check if the word is a substring of any multi-word keywords as well
+            let isIntentKeyword = strongIntentKeywords.contains { $0.contains(word) } ||
+                                  contextIntentKeywords.contains { $0.contains(word) } ||
+                                  negationKeywords.contains { $0.contains(word) }
+            if isIntentKeyword {
+                return true
+            }
+            
+            if let tag = tag {
+                switch tag {
+                case .noun, .adjective, .otherWord:
+                    // Filter out common retail/e-commerce destinations or filler words
+                    let blacklistedWords: Set<String> = ["amazon", "flipkart", "shop", "store", "buy", "order", "online", "myntra", "meesho", "blinkit", "zepto"]
+                    if !blacklistedWords.contains(word) && word.count > 1 {
+                        words.append(word)
+                    }
+                default:
+                    break
+                }
+            }
+            return true
+        }
+        
+        return words.isEmpty ? nil : words.joined(separator: " ")
     }
 }
