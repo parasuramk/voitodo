@@ -6,7 +6,7 @@ struct SettingsView: View {
     @AppStorage("silenceThreshold") private var silenceThreshold: Double = 3.0
     @AppStorage("undoDurationMinutes") private var undoDurationMinutes: Double = 60.0
     @AppStorage("appTheme") private var appTheme: Theme = .system
-    @AppStorage("isShoppingSuggestionsEnabled") private var isShoppingSuggestionsEnabled = false
+
 
     var body: some View {
         Form {
@@ -35,12 +35,7 @@ struct SettingsView: View {
                 }
             }
             
-            if AffiliateService.shared.isIndiaRegion() {
-                Section(header: Text("Smart Integrations"), footer: Text("AI detects products you mention and adds a quick shop link to the swipe menu.")) {
-                    Toggle("Smart Shopping Suggestions", isOn: $isShoppingSuggestionsEnabled)
-                }
-            }
-            
+
             Section(header: Text("Recording"), footer: Text("Adjust how long the app waits in silence before automatically stopping the recording.")) {
                 VStack {
                     HStack {

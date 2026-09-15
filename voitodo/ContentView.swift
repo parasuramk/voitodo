@@ -19,7 +19,7 @@ struct ContentView: View {
     @AppStorage("hideCompleted") private var hideCompleted = false
     @AppStorage("undoDurationMinutes") private var undoDurationMinutes: Double = 60.0
     @AppStorage("hasSeenRecordingTip") private var hasSeenRecordingTip = false
-    @AppStorage("isShoppingSuggestionsEnabled") private var isShoppingSuggestionsEnabled = false
+
     
     @State private var intelligenceItem: VoitodoItem? = nil
     @State private var itemToShare: VoitodoItem? = nil
@@ -258,17 +258,7 @@ struct ContentView: View {
                                     }
                                     .tint(.blue)
                                     
-                                    if isShoppingSuggestionsEnabled && AffiliateService.shared.isIndiaRegion() {
-                                        if let query = AIService.shared.detectShoppingIntent(in: item.summary ?? item.text).query,
-                                           let url = AffiliateService.shared.generateAmazonIndiaURL(for: query) {
-                                            Button {
-                                                UIApplication.shared.open(url)
-                                            } label: {
-                                                Label("Shop", systemImage: "bag.fill")
-                                            }
-                                            .tint(.purple)
-                                        }
-                                    }
+
                                 }
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
