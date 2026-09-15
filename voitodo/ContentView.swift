@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import AudioToolbox
+import AVFoundation
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
