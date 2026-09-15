@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import EventKit
 import AudioToolbox
 
 struct ContentView: View {
@@ -18,11 +17,11 @@ struct ContentView: View {
     
     @AppStorage("hideCompleted") private var hideCompleted = false
     @AppStorage("undoDurationMinutes") private var undoDurationMinutes: Double = 60.0
-    @AppStorage("autoTriageToCalendar") private var autoTriageToCalendar = false
     @AppStorage("hasSeenRecordingTip") private var hasSeenRecordingTip = false
     @AppStorage("isShoppingSuggestionsEnabled") private var isShoppingSuggestionsEnabled = false
     
     @State private var intelligenceItem: VoitodoItem? = nil
+    @State private var itemToShare: VoitodoItem? = nil
 
     // Calculates opacity based on how old the thought is (Visual Decay)
     private func decayOpacity(for timestamp: Date) -> Double {
@@ -60,12 +59,11 @@ struct ContentView: View {
         formatter.timeStyle = .short
         let timeString = formatter.string(from: date)
         
-        // Only explicitly say "Tomorrow" during the 6 AM to 9 AM incubation window
-        // because that's the only time when both "due today" and "due tomorrow" 
-        // thoughts can exist simultaneously. Once past 9 AM, "9:00 AM" implicitly 
-        // means tomorrow.
+        // Only explicitly say "Tomorrow" during the incubation window before 9:00 AM (midnight to 9:00 AM)
+        // because that's when both "due today" and "due tomorrow" thoughts can exist simultaneously.
+        // Once past 9 AM, "9:00 AM" implicitly means tomorrow.
         let hour = Calendar.current.component(.hour, from: Date())
-        if hour >= 6 && hour < 9 {
+        if hour < 9 {
             if Calendar.current.isDateInTomorrow(date) {
                 return "Tomorrow \(timeString)"
             }
@@ -84,13 +82,6 @@ struct ContentView: View {
             if lhsSettled != rhsSettled { return !lhsSettled }
             return lhs.timestamp > rhs.timestamp
         }
-    }
-    
-    // Helper to extract 10 AM tomorrow for specific calendar blocking
-    private func getTomorrow10AM() -> Date {
-        let calendar = Calendar.current
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: Date()) ?? Date()
-        return calendar.date(bySettingHour: 10, minute: 0, second: 0, of: tomorrow) ?? Date()
     }
 
     @StateObject private var audioRecorder = AudioRecorder()
@@ -245,6 +236,12 @@ struct ContentView: View {
                                 } label: {
                                     Label("Copy Text", systemImage: "doc.on.doc")
                                 }
+                                
+                                Button {
+                                    itemToShare = item
+                                } label: {
+                                    Label("Share...", systemImage: "square.and.arrow.up")
+                                }
                             }
                             .swipeActions(edge: .leading) {
                                 if item.isCompleted {
@@ -274,24 +271,22 @@ struct ContentView: View {
                                 }
                             }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                if !(item.isCalendared ?? false) {
-                                    if !item.isCompleted {
-                                        Button(role: .destructive, action: {
-                                            withAnimation {
-                                                deleteItem(item)
-                                            }
-                                        }) {
-                                            Label("Delete", systemImage: "trash")
+                                if !item.isCompleted {
+                                    Button(role: .destructive, action: {
+                                        withAnimation {
+                                            deleteItem(item)
                                         }
-                                    }
-                                    
-                                    Button(action: {
-                                        addToCalendar(item)
                                     }) {
-                                        Label("Calendar", systemImage: "calendar.badge.plus")
+                                        Label("Delete", systemImage: "trash")
                                     }
-                                    .tint(.blue)
                                 }
+                                
+                                Button {
+                                    itemToShare = item
+                                } label: {
+                                    Label("Share", systemImage: "square.and.arrow.up")
+                                }
+                                .tint(.indigo)
                             }
                         }
                         // Removed standard .onDelete to prevent default delete swipes on protected items.
@@ -366,6 +361,9 @@ struct ContentView: View {
             .fullScreenCover(item: $intelligenceItem) { item in
                 IntelligenceTextEditorView(item: item)
             }
+            .sheet(item: $itemToShare) { item in
+                ActivityViewController(activityItems: [item.summary ?? item.text])
+            }
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar(isRecording ? .hidden : .automatic, for: .navigationBar)
             .toolbar {
@@ -401,7 +399,6 @@ struct ContentView: View {
                         toggleRecording()
                     }
                 }
-                runAutoTriage()
             }
             .onChange(of: scenePhase) { oldPhase, newPhase in
                 if newPhase == .active {
@@ -430,7 +427,7 @@ struct ContentView: View {
         let now = Date()
         let calendar = Calendar.current
         let components = calendar.dateComponents([.hour, .minute, .second], from: now)
-        guard let hour = components.hour, hour >= 6, hour < 9 else { return }
+        guard let hour = components.hour, hour < 9 else { return }
         
         var target = calendar.dateComponents([.year, .month, .day], from: now)
         target.hour = 9
@@ -487,9 +484,16 @@ struct ContentView: View {
             speechRecognizer.stopTranscribing()
             
             // Haptic and Audio cue AFTER session ends with a small delay for full volume
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                AudioServicesPlaySystemSound(1114)
+                do {
+                    let session = AVAudioSession.sharedInstance()
+                    try session.setCategory(.playback, mode: .default, options: [.defaultToSpeaker])
+                    try session.setActive(true)
+                } catch {
+                    print("Failed to set audio session for completion chime: \(error)")
+                }
+                AudioServicesPlayAlertSound(1114)
             }
             
             // Save the result
@@ -562,31 +566,8 @@ struct ContentView: View {
                 }
             }
         } else {
-            // Un-complete logic: if calendared, remove it from iOS Calendar
-            if let eventID = item.eventIdentifier, item.isCalendared == true {
-                let store = EKEventStore()
-                let completion: (Bool, Error?) -> Void = { granted, _ in
-                    if granted {
-                        if let eventToRemove = store.event(withIdentifier: eventID) {
-                            do {
-                                try store.remove(eventToRemove, span: .thisEvent)
-                            } catch {
-                                print("Failed to remove calendar event on Undo: \(error)")
-                            }
-                        }
-                    }
-                }
-                
-                if #available(iOS 17.0, *) {
-                    store.requestFullAccessToEvents(completion: completion)
-                } else {
-                    store.requestAccess(to: .event, completion: completion)
-                }
-                
-                item.isCalendared = false
-                item.eventIdentifier = nil
-            }
-            
+            item.isCalendared = false
+            item.eventIdentifier = nil
             item.completionDate = nil
             
             withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
@@ -622,109 +603,19 @@ struct ContentView: View {
         modelContext.delete(item)
         ReminderService.shared.updateBadgeCount()
     }
-    
-    private func addToCalendar(_ item: VoitodoItem) {
-        let store = EKEventStore()
-        let completion: (Bool, Error?) -> Void = { granted, error in
-            if granted {
-                let event = EKEvent(eventStore: store)
-                event.title = item.summary ?? item.text
-                
-                // Block the calendar for 30 minutes at 10 AM tomorrow
-                let start = self.getTomorrow10AM()
-                event.startDate = start
-                event.endDate = start.addingTimeInterval(30 * 60)
-                event.isAllDay = false
-                event.calendar = store.defaultCalendarForNewEvents
-                
-                // Add a 10-minute alert
-                event.addAlarm(EKAlarm(relativeOffset: -10 * 60))
-                
-                do {
-                    try store.save(event, span: .thisEvent)
-                    let savedID = event.eventIdentifier // Get the generated ID
-                    DispatchQueue.main.async {
-                        // Keep the thought for Future AI / Memory Vault, just mark it completed and calendared
-                        withAnimation {
-                            item.isCalendared = true
-                            item.eventIdentifier = savedID
-                            if !item.isCompleted {
-                                toggleComplete(item)
-                            }
-                        }
-                    }
-                } catch {
-                    print("Failed to save event to calendar: \(error)")
-                }
-            } else {
-                print("Access to calendar denied")
-            }
-        }
+}
 
-        if #available(iOS 17.0, *) {
-            // Must use FullAccess to be able to fetch and delete it during an Undo gesture later.
-            store.requestFullAccessToEvents(completion: completion)
-        } else {
-            store.requestAccess(to: .event, completion: completion)
-        }
+// MARK: - Share Sheet (UIActivityViewController)
+
+struct ActivityViewController: UIViewControllerRepresentable {
+    var activityItems: [Any]
+    var applicationActivities: [UIActivity]? = nil
+
+    func makeUIViewController(context: UIViewControllerRepresentableContext<ActivityViewController>) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
     }
-    
-    private func runAutoTriage() {
-        guard autoTriageToCalendar else { return }
-        
-        // Find items older than 3 days (e.g. Day 4) that haven't been completed or calendared yet
-        let now = Date()
-        let staleItems = items.filter { item in
-            let ageInDays = now.timeIntervalSince(item.timestamp) / (60 * 60 * 24)
-            return !item.isCompleted && !(item.isCalendared ?? false) && ageInDays >= 3.0
-        }
-        
-        guard !staleItems.isEmpty else { return }
-        
-        let store = EKEventStore()
-        let completion: (Bool, Error?) -> Void = { granted, _ in
-            if granted {
-                // Must interact with SwiftData models on the main thread
-                DispatchQueue.main.async {
-                    for item in staleItems {
-                        let event = EKEvent(eventStore: store)
-                        event.title = item.summary ?? item.text
-                        
-                        // Block 30 minutes at 10 AM tomorrow
-                        let start = self.getTomorrow10AM()
-                        event.startDate = start
-                        event.endDate = start.addingTimeInterval(30 * 60)
-                        event.isAllDay = false
-                        event.calendar = store.defaultCalendarForNewEvents
-                        
-                        // Add a 10-minute alert
-                        event.addAlarm(EKAlarm(relativeOffset: -10 * 60))
-                        
-                        do {
-                            try store.save(event, span: .thisEvent)
-                            let savedID = event.eventIdentifier
-                            
-                            withAnimation {
-                                item.isCalendared = true
-                                item.eventIdentifier = savedID
-                                if !item.isCompleted {
-                                    toggleComplete(item)
-                                }
-                            }
-                        } catch {
-                            print("Failed to auto-triage event to calendar: \(error)")
-                        }
-                    }
-                }
-            }
-        }
-        
-        if #available(iOS 17.0, *) {
-            store.requestFullAccessToEvents(completion: completion)
-        } else {
-            store.requestAccess(to: .event, completion: completion)
-        }
-    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: UIViewControllerRepresentableContext<ActivityViewController>) {}
 }
 
 // MARK: - Writing Tools Modal

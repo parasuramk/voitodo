@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import EventKit
 
 enum Theme: String, CaseIterable, Identifiable {
     case system = "System"
@@ -23,7 +22,6 @@ private let iCloudSyncedKeys = [
     "iCloudSyncEnabled",
     "silenceThreshold",
     "undoDurationMinutes",
-    "autoTriageToCalendar",
     "appTheme"
 ]
 
@@ -61,7 +59,6 @@ struct voitodoApp: App {
                 .preferredColorScheme(appTheme.colorScheme)
                 .onAppear {
                     migrateNotificationFiredFlags()
-                    requestCalendarPermissionIfNeeded()
                     syncSettingsFromiCloud()
                     
                     // Listen for iCloud KV changes pushed from other devices
@@ -76,19 +73,6 @@ struct voitodoApp: App {
                 }
         }
         .modelContainer(voitodoApp.sharedModelContainer)
-    }
-    
-    // MARK: - Calendar Permission
-    
-    /// Requests calendar access upfront so the dialog appears on first launch,
-    /// not the first time the user tries to add a thought to the calendar.
-    private func requestCalendarPermissionIfNeeded() {
-        let store = EKEventStore()
-        if #available(iOS 17.0, *) {
-            store.requestFullAccessToEvents { _, _ in }
-        } else {
-            store.requestAccess(to: .event) { _, _ in }
-        }
     }
     
     // MARK: - iCloud Settings Sync

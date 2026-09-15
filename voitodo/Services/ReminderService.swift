@@ -117,7 +117,8 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
     }
     
     // Non-async func purely to calculate tomorrow's date for UI display
-    // Non-async func to calculate the next 9:00 AM presentation with a minimum 3-hour breathing room
+    // Non-async func to calculate the next 9:00 AM presentation with midnight cutoff.
+    // Everything captured today is presented tomorrow morning at 9:00 AM (guaranteeing 9 to 33 hours of incubation).
     func getNextReminderDate() -> Date? {
         let now = Date()
         var components = Calendar.current.dateComponents([.year, .month, .day], from: now)
@@ -127,15 +128,7 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
         
         guard let todays9AM = Calendar.current.date(from: components) else { return nil }
         
-        let difference = todays9AM.timeIntervalSince(now)
-        
-        if difference >= 3 * 3600 {
-            // It's 3+ hours before today's 9:00 AM (e.g. 5:00 AM), schedule for today at 9:00 AM
-            return todays9AM
-        } else {
-            // Less than 3 hours or already past 9:00 AM, schedule for tomorrow at 9:00 AM
-            return Calendar.current.date(byAdding: .day, value: 1, to: todays9AM)
-        }
+        return Calendar.current.date(byAdding: .day, value: 1, to: todays9AM)
     }
 
     func scheduleHybridReminder(text: String, id: UUID, triggerDate: Date) async {
@@ -147,18 +140,19 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
         
         let dateComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: triggerDate)
         
-        // Hybrid Logic
+        // Hybrid Logic: Maximum 1 notification at any time.
+        // 1 thought = Individual notification. 2+ thoughts = Summary notification.
         if let summary = summaryRequest {
-            // We already passed the 5-item threshold earlier today.
-            let currentCount = summary.content.userInfo["count"] as? Int ?? 4
+            // Summary already active, increment count
+            let currentCount = summary.content.userInfo["count"] as? Int ?? 1
             await updateSummaryNotification(count: currentCount + 1, dateComponents: dateComponents)
-        } else if itemRequests.count >= 4 {
-            // This is our 5th item. We switch from individual notifications to a summary notification.
+        } else if itemRequests.count >= 1 {
+            // 2nd item captured: collapse individual item into a summary notification
             let identifiersToCancel = itemRequests.map { $0.identifier }
             center.removePendingNotificationRequests(withIdentifiers: identifiersToCancel)
-            await updateSummaryNotification(count: 5, dateComponents: dateComponents)
+            await updateSummaryNotification(count: 2, dateComponents: dateComponents)
         } else {
-            // Under 5 limit. Schedule as an individual actionable notification.
+            // First item: schedule as individual actionable notification
             let content = UNMutableNotificationContent()
             content.title = "Whatodo Reminder"
             content.body = text
@@ -180,7 +174,7 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
     private func updateSummaryNotification(count: Int, dateComponents: DateComponents) async {
         let content = UNMutableNotificationContent()
         content.title = "Whatodo Summary"
-        content.body = "You captured \(count) thoughts yesterday. Open the app to review them."
+        content.body = "You have \(count) thoughts to review. Open Whatodo to check them off."
         content.sound = .default
         content.threadIdentifier = "voitodo.reminders.daily"
         content.userInfo = ["count": count]

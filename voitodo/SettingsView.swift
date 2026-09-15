@@ -5,7 +5,6 @@ struct SettingsView: View {
     @AppStorage("iCloudSyncEnabled") private var iCloudSyncEnabled = true
     @AppStorage("silenceThreshold") private var silenceThreshold: Double = 3.0
     @AppStorage("undoDurationMinutes") private var undoDurationMinutes: Double = 60.0
-    @AppStorage("autoTriageToCalendar") private var autoTriageToCalendar = false
     @AppStorage("appTheme") private var appTheme: Theme = .system
     @AppStorage("isShoppingSuggestionsEnabled") private var isShoppingSuggestionsEnabled = false
 
@@ -20,15 +19,11 @@ struct SettingsView: View {
                 .pickerStyle(SegmentedPickerStyle())
             }
             
-            Section(header: Text("Triage"), footer: Text("Automatically push thoughts older than 3 days into your iOS Calendar.")) {
-                Toggle("Auto-Triage to Calendar", isOn: $autoTriageToCalendar)
-            }
-            
             Section(header: Text("Data"), footer: Text("Disabling iCloud sync keeps all thoughts strictly on this device. Changes to this setting require an app restart to take effect.")) {
                 Toggle("iCloud Sync", isOn: $iCloudSyncEnabled)
             }
             
-            Section(header: Text("Inbox Actions"), footer: Text("After marked complete or add to calendar, the action cannot be undone after this time passes")) {
+            Section(header: Text("Inbox Actions"), footer: Text("After being marked complete, the action cannot be undone after this time passes")) {
                 VStack {
                     HStack {
                         Text("Undo Window")
@@ -73,7 +68,6 @@ struct SettingsView: View {
         .onChange(of: iCloudSyncEnabled)   { _, v in pushToiCloud("iCloudSyncEnabled", v) }
         .onChange(of: silenceThreshold)    { _, v in pushToiCloud("silenceThreshold", v) }
         .onChange(of: undoDurationMinutes) { _, v in pushToiCloud("undoDurationMinutes", v) }
-        .onChange(of: autoTriageToCalendar){ _, v in pushToiCloud("autoTriageToCalendar", v) }
         .onChange(of: appTheme)            { _, v in pushToiCloud("appTheme", v.rawValue) }
     }
 }

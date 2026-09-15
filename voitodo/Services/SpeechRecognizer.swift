@@ -100,6 +100,16 @@ class SpeechRecognizer: ObservableObject {
         audioEngine.stop()
         recognitionRequest?.endAudio()
         self.isTranscribing = false
+        
+        // Reset audio session from .measurement/.playAndRecord to .playback with speaker routing
+        // so confirmation sound effects play loudly through the main bottom speaker.
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.defaultToSpeaker])
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("Failed to reset audio session to playback: \(error)")
+        }
     }
     
     private func resetSilenceTimer() {
