@@ -253,9 +253,9 @@ struct ContentView: View {
                                     }
                                 } else {
                                     Button(action: { toggleComplete(item) }) {
-                                        Label("Complete", systemImage: "checkmark")
+                                        Label("Archive", systemImage: "archivebox")
                                     }
-                                    .tint(.green)
+                                    .tint(.blue)
                                     
                                     if isShoppingSuggestionsEnabled && AffiliateService.shared.isIndiaRegion() {
                                         if let query = AIService.shared.detectShoppingIntent(in: item.summary ?? item.text).query,

@@ -11,7 +11,7 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
         center.delegate = self
         
         // Define Actionable Categories
-        let completeAction = UNNotificationAction(identifier: "COMPLETE_ACTION", title: "Mark Complete", options: [])
+        let completeAction = UNNotificationAction(identifier: "COMPLETE_ACTION", title: "Archive", options: [])
         let category = UNNotificationCategory(identifier: "VOITODO_ITEM", actions: [completeAction], intentIdentifiers: [], options: [])
         center.setNotificationCategories([category])
         
@@ -174,7 +174,7 @@ class ReminderService: NSObject, UNUserNotificationCenterDelegate {
     private func updateSummaryNotification(count: Int, dateComponents: DateComponents) async {
         let content = UNMutableNotificationContent()
         content.title = "Whatodo Summary"
-        content.body = "You have \(count) thoughts to review. Open Whatodo to check them off."
+        content.body = "You have \(count) thoughts to review. Open Whatodo to review them."
         content.sound = .default
         content.threadIdentifier = "voitodo.reminders.daily"
         content.userInfo = ["count": count]

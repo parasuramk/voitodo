@@ -23,7 +23,7 @@ struct SettingsView: View {
                 Toggle("iCloud Sync", isOn: $iCloudSyncEnabled)
             }
             
-            Section(header: Text("Inbox Actions"), footer: Text("After being marked complete, the action cannot be undone after this time passes")) {
+            Section(header: Text("Inbox Actions"), footer: Text("After being archived, thoughts can only be undone within this time window.")) {
                 VStack {
                     HStack {
                         Text("Undo Window")
